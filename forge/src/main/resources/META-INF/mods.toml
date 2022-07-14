@@ -1,7 +1,7 @@
 modLoader = "javafml"
-loaderVersion = "[36,)"
+loaderVersion = "[40,)"
 #issueTrackerURL = ""
-license = "Insert License Here"
+license = "MIT"
 
 [[mods]]
 modId = "kubejsdebugadapter"
@@ -16,28 +16,28 @@ A mod adding a debug adapter protocol for KubeJS.
 [[dependencies.kubejsdebugadapter]]
 modId = "forge"
 mandatory = true
-versionRange = "[36,)"
+versionRange = "[40,)"
 ordering = "NONE"
 side = "BOTH"
 
 [[dependencies.kubejsdebugadapter]]
 modId = "minecraft"
 mandatory = true
-versionRange = "[1.16.5,)"
+versionRange = "[1.18.2,)"
 ordering = "NONE"
 side = "BOTH"
 
 [[dependencies.kubejsdebugadapter]]
 modId = "architectury"
 mandatory = true
-versionRange = "[1.32.63,)"
+versionRange = "[4.5.76,)"
 ordering = "AFTER"
 side = "BOTH"
 
 [[dependencies.kubejsdebugadapter]]
 modId = "rhino"
 mandatory = true
-versionRange = "[1605.1.5,)"
+versionRange = "[1802.1.13,)"
 ordering = "AFTER"
 side = "BOTH"
 
@@ -45,7 +45,7 @@ side = "BOTH"
 [[dependencies.kubejsdebugadapter]]
 modId = "kubejs"
 mandatory = true
-versionRange = "[1605.3.19,)"
+versionRange = "[1802.5.3,)"
 ordering = "AFTER"
 side = "BOTH"
 

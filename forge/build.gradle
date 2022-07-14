@@ -40,11 +40,11 @@ repositories {
 dependencies {
     forge "net.minecraftforge:forge:${rootProject.forge_version}"
     // Remove the next line if you don't want to depend on the API
-    modApi "me.shedaniel:architectury-forge:${rootProject.architectury_version}"
+    modApi "dev.architectury:architectury-forge:${rootProject.architectury_version}"
     modApi("dev.latvian.mods:rhino-forge:${rootProject.rhino_version}")
     modApi "dev.latvian.mods:kubejs-forge:${rootProject.kubejs_version}"
 
-    modLocalRuntime("mezz.jei:jei-1.16.5:${rootProject.forge_jei_version}")
+    modLocalRuntime("mezz.jei:jei-1.18.2:${rootProject.forge_jei_version}")
     shadowCommon 'org.eclipse.lsp4j:org.eclipse.lsp4j.debug:0.14.0'
     implementation 'org.eclipse.lsp4j:org.eclipse.lsp4j.debug:0.14.0'
 

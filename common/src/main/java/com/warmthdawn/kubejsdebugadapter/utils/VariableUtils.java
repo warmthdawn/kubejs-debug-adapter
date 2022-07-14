@@ -1,8 +1,7 @@
 package com.warmthdawn.kubejsdebugadapter.utils;
 
-import dev.latvian.kubejs.recipe.RecipeFunction;
+import dev.latvian.mods.kubejs.recipe.RecipeFunction;
 import dev.latvian.mods.rhino.*;
-import dev.latvian.mods.rhino.debug.DebuggableObject;
 import dev.latvian.mods.rhino.util.DynamicFunction;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;

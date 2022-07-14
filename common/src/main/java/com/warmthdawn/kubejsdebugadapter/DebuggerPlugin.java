@@ -3,7 +3,7 @@ package com.warmthdawn.kubejsdebugadapter;
 import com.warmthdawn.kubejsdebugadapter.adapter.DebuggerLauncher;
 import com.warmthdawn.kubejsdebugadapter.debugger.DebugRuntime;
 import com.warmthdawn.kubejsdebugadapter.utils.NotifyDialog;
-import dev.latvian.kubejs.KubeJSPlugin;
+import dev.latvian.mods.kubejs.KubeJSPlugin;
 import net.minecraft.client.resources.language.I18n;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;

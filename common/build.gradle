@@ -12,7 +12,7 @@ dependencies {
     // Do NOT use other classes from fabric loader
     modImplementation "net.fabricmc:fabric-loader:${rootProject.fabric_loader_version}"
     // Remove the next line if you don't want to depend on the API
-    modApi "me.shedaniel:architectury:${rootProject.architectury_version}"
+    modApi "dev.architectury:architectury:${rootProject.architectury_version}"
     modApi "dev.latvian.mods:rhino-fabric:${rootProject.rhino_version}"
     modApi "dev.latvian.mods:kubejs-fabric:${rootProject.kubejs_version}"
     implementation 'org.eclipse.lsp4j:org.eclipse.lsp4j.debug:0.14.0'

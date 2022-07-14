@@ -1,9 +1,5 @@
 package com.warmthdawn.kubejsdebugadapter;
 
-import me.shedaniel.architectury.registry.CreativeTabs;
-import me.shedaniel.architectury.registry.DeferredRegister;
-import me.shedaniel.architectury.registry.Registries;
-import me.shedaniel.architectury.registry.RegistrySupplier;
 import net.minecraft.core.Registry;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.LazyLoadedValue;

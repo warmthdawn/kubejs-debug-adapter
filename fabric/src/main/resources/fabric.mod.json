@@ -25,9 +25,9 @@
   ],
   "depends": {
     "fabric": "*",
-    "minecraft": ">=1.16.5",
-    "architectury": ">=1.32.63",
-    "rhino": ">=1605.1.5-build.75",
-    "kubejs": " >=1605.3.19-build.251"
+    "minecraft": ">=1.18.2",
+    "architectury": ">=4.5.76",
+    "rhino": ">=1802.1.13-build.174",
+    "kubejs": " >=1802.5.3-build.444"
   }
 }
