@@ -118,7 +118,7 @@ public class CompletionUtils {
         AstNode target = node.getTarget();
         String prefix = source.substring(target.getPosition(), target.getPosition() + target.getLength());
 
-        Object targetObj = EvalUtils.evalulate(factory, prefix, stackFrame.getScope());
+        Object targetObj = EvalUtils.evaluate(factory, prefix, stackFrame.getScope());
 
         Object[] objectIds = VariableUtils.getObjectIds(factory, targetObj);
         for (Object objectId : objectIds) {
@@ -165,7 +165,7 @@ public class CompletionUtils {
         AstNode target = node.getTarget();
         String prefix = source.substring(target.getPosition(), target.getPosition() + target.getLength());
 
-        Object targetObj = EvalUtils.evalulate(factory, prefix, stackFrame.getScope());
+        Object targetObj = EvalUtils.evaluate(factory, prefix, stackFrame.getScope());
 
         Object[] objectIds = VariableUtils.getObjectIds(factory, targetObj);
         for (Object objectId : objectIds) {

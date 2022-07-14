@@ -17,7 +17,6 @@ import org.eclipse.lsp4j.debug.*;
 import org.eclipse.lsp4j.debug.services.IDebugProtocolClient;
 import org.eclipse.lsp4j.debug.services.IDebugProtocolServer;
 
-import java.lang.Thread;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -276,7 +275,7 @@ public class KubeDebugAdapter implements IDebugProtocolServer {
             Scriptable scope = stackFrame.getScope();
             EvaluateResponse response = new EvaluateResponse();
             try {
-                Object result = EvalUtils.evalulate(factory, expression, scope);
+                Object result = EvalUtils.evaluate(factory, expression, scope);
                 IVariableTreeNode variable = session.createVariable(result, expression, factory);
                 String resultString = VariableUtils.variableToString(factory, result);
                 response.setResult(resultString);

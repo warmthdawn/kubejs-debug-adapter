@@ -11,6 +11,10 @@ public class DebugContextData {
     /**
      * The stack frames.
      */
+
+    private boolean isEvaluating = false;
+
+
     private final ObjArray frameStack = new ObjArray();
 
     /**
@@ -128,6 +132,13 @@ public class DebugContextData {
         frameStack.pop();
     }
 
+    public boolean isEvaluating() {
+        return isEvaluating;
+    }
+
+    public void setEvaluating(boolean evaluating) {
+        isEvaluating = evaluating;
+    }
 
     public KubeStackFrame[] stackFrames() {
         KubeStackFrame[] result = new KubeStackFrame[frameStack.size()];

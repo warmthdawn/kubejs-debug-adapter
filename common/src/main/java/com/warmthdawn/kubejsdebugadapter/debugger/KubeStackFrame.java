@@ -49,19 +49,22 @@ public class KubeStackFrame implements DebugFrame {
 
     private void handlePause(Context cx, String reason, boolean interrupt) {
         DebugContextData data = DebugContextData.get(cx);
+        if (data.isEvaluating()) {
+            return;
+        }
         DebuggerBridge bridge = runtime.getBridge();
         if (bridge == null) {
             data.clearStepInfo();
             return;
         }
-        DebugThread thread = runtime.getThread(cx);
-        bridge.notifyStop(thread.id(), reason);
-        data.clearStepInfo();
 
         if (interrupt) {
+            DebugThread thread = runtime.getThread(cx);
+            bridge.notifyStop(thread.id(), reason);
             //暂停脚本执行
             thread.interrupt();
         }
+        data.clearStepInfo();
     }
 
     @Override
