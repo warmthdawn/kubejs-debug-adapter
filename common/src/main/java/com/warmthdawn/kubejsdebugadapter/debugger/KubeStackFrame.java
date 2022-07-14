@@ -21,9 +21,8 @@ public class KubeStackFrame implements DebugFrame {
         this.factory = factory;
 
         int paramCount = function.getParamCount();
-        int paramAndVarCount = function.getParamAndVarCount();
         String[] paramNames = new String[paramCount];
-        for (int i = 0; i < paramAndVarCount; i++) {
+        for (int i = 0; i < paramCount; i++) {
             paramNames[i] = function.getParamOrVarName(i);
         }
 

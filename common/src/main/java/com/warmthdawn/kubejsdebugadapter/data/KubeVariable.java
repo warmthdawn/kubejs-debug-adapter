@@ -5,12 +5,15 @@ import com.warmthdawn.kubejsdebugadapter.utils.PathUtil;
 import com.warmthdawn.kubejsdebugadapter.utils.VariableUtils;
 import dev.latvian.mods.rhino.ContextFactory;
 import dev.latvian.mods.rhino.debug.DebuggableScript;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
 public class KubeVariable implements IVariableTreeNode {
+    private static final Logger log = LogManager.getLogger();
     private Object obj;
 
 
@@ -73,13 +76,14 @@ public class KubeVariable implements IVariableTreeNode {
         List<IVariableTreeNode> children = new ArrayList<>();
         for (Object objectId : objectIds) {
             try {
+                // TODO: 超时
                 children.add(session.createVariable(
                         VariableUtils.getObjectProperty(factory, obj, objectId),
                         VariableUtils.variableToString(factory, objectId),
                         factory
                     )
                 );
-            }catch (Throwable e) {
+            } catch (Throwable e) {
                 children.add(session.createError(e, VariableUtils.variableToString(factory, objectId), factory));
             }
         }
