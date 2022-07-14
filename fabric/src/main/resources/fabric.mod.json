@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "id": "kubejsdebugadapter",
+  "version": "${version}",
+  "name": "KubeJS Debug Adapter",
+  "description": "A mod adding a debug adapter protocol for KubeJS.",
+  "authors": [
+    "WarmthDawn"
+  ],
+  "contact": {
+    "homepage": "https://fabricmc.net/",
+    "sources": "https://github.com/FabricMC/fabric-example-mod"
+  },
+  "license": "Insert License Here",
+  "icon": "assets/kubejsdebugadapter/icon.png",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "com.warmthdawn.kubejsdebugadapter.fabric.KubeJSDebugAdapterFabric"
+    ]
+  },
+  "mixins": [
+    "kubejsdebugadapter.mixins.json",
+    "kubejsdebugadapter-common.mixins.json"
+  ],
+  "depends": {
+    "fabric": "*",
+    "minecraft": ">=1.16.5",
+    "architectury": ">=1.32.63",
+    "rhino": ">=1605.1.5-build.75",
+    "kubejs": " >=1605.3.19-build.251"
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "required": true,
+  "package": "com.warmthdawn.kubejsdebugadapter.mixin.forge",
+  "compatibilityLevel": "JAVA_8",
+  "client": [
+  ],
+  "mixins": [
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

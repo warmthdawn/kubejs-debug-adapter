@@ -1,0 +1,18 @@
+{
+  "required": true,
+  "package": "com.warmthdawn.kubejsdebugadapter.mixin",
+  "compatibilityLevel": "JAVA_8",
+  "client": [
+    "MixinClientMain"
+  ],
+  "server": [
+    "MixinServerMain"
+  ],
+  "mixins": [
+    "MixinConsoleJS",
+    "MixinScriptManager"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}
