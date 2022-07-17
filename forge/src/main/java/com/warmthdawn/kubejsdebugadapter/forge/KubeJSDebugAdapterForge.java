@@ -1,7 +1,7 @@
 package com.warmthdawn.kubejsdebugadapter.forge;
 
 import com.warmthdawn.kubejsdebugadapter.KubeJSDebugAdapter;
-import me.shedaniel.architectury.platform.forge.EventBuses;
+import dev.architectury.platform.forge.EventBuses;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 

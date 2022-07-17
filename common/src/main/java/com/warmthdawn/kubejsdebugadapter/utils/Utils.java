@@ -1,7 +1,7 @@
 package com.warmthdawn.kubejsdebugadapter.utils;
 
+import com.warmthdawn.kubejsdebugadapter.api.DebuggableScript;
 import dev.latvian.mods.rhino.ObjArray;
-import dev.latvian.mods.rhino.debug.DebuggableScript;
 
 public class Utils {
 

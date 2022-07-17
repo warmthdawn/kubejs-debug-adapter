@@ -1,6 +1,7 @@
 package com.warmthdawn.kubejsdebugadapter.debugger;
 
 import com.warmthdawn.kubejsdebugadapter.adapter.DebuggerBridge;
+import com.warmthdawn.kubejsdebugadapter.api.IDebuggableContext;
 import dev.latvian.mods.rhino.Context;
 import dev.latvian.mods.rhino.ContextFactory;
 
@@ -13,8 +14,12 @@ public class DebugContextListener implements ContextFactory.Listener {
 
     @Override
     public void contextCreated(Context cx) {
+        if (!(cx instanceof IDebuggableContext)) {
+            return;
+        }
         DebugRuntime runtime = DebugRuntime.getInstance();
-        cx.setDebugger(new DebuggerProxy(runtime, managerName), new DebugContextData());
+
+        ((IDebuggableContext) cx).setDebugger(new DebuggerProxy(runtime, managerName), new DebugContextData());
         String threadName = managerName + ":" + Thread.currentThread().getName();
 
         DebugThread debugThread = runtime.newThread(cx, threadName);

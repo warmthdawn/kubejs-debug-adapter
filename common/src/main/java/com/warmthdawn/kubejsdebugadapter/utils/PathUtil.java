@@ -2,8 +2,8 @@ package com.warmthdawn.kubejsdebugadapter.utils;
 
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
-import dev.latvian.kubejs.KubeJSPaths;
-import dev.latvian.kubejs.util.UtilsJS;
+import dev.latvian.mods.kubejs.KubeJSPaths;
+import dev.latvian.mods.kubejs.util.UtilsJS;
 import org.eclipse.lsp4j.debug.Source;
 
 import java.io.File;

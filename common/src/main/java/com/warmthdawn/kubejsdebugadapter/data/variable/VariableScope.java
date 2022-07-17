@@ -1,4 +1,4 @@
-package com.warmthdawn.kubejsdebugadapter.data;
+package com.warmthdawn.kubejsdebugadapter.data.variable;
 
 import com.warmthdawn.kubejsdebugadapter.debugger.DebugSession;
 

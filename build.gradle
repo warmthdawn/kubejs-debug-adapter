@@ -45,6 +45,10 @@ allprojects {
         maven {
             url "https://maven.nanite.dev"
         }
+        maven {
+            name = "Jitpack"
+            url = "https://jitpack.io/"
+        }
     }
 
     tasks.withType(JavaCompile) {

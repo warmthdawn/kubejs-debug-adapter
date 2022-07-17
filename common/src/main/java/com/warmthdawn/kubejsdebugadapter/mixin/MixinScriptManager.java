@@ -1,8 +1,8 @@
 package com.warmthdawn.kubejsdebugadapter.mixin;
 
 import com.warmthdawn.kubejsdebugadapter.debugger.DebugContextListener;
-import dev.latvian.kubejs.script.ScriptManager;
-import dev.latvian.kubejs.script.ScriptType;
+import dev.latvian.mods.kubejs.script.ScriptManager;
+import dev.latvian.mods.kubejs.script.ScriptType;
 import dev.latvian.mods.rhino.Context;
 import dev.latvian.mods.rhino.ContextFactory;
 import org.spongepowered.asm.mixin.Final;

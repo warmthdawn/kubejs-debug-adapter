@@ -1,11 +1,11 @@
 package com.warmthdawn.kubejsdebugadapter.debugger;
 
 import com.warmthdawn.kubejsdebugadapter.adapter.DebuggerBridge;
+import com.warmthdawn.kubejsdebugadapter.api.DebugFrame;
+import com.warmthdawn.kubejsdebugadapter.api.DebuggableScript;
 import dev.latvian.mods.rhino.Context;
 import dev.latvian.mods.rhino.ContextFactory;
 import dev.latvian.mods.rhino.Scriptable;
-import dev.latvian.mods.rhino.debug.DebugFrame;
-import dev.latvian.mods.rhino.debug.DebuggableScript;
 import org.eclipse.lsp4j.debug.StoppedEventArgumentsReason;
 
 public class KubeStackFrame implements DebugFrame {

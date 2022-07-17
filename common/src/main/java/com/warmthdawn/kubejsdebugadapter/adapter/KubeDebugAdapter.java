@@ -7,8 +7,8 @@ import com.warmthdawn.kubejsdebugadapter.debugger.KubeStackFrame;
 import com.warmthdawn.kubejsdebugadapter.utils.CompletionUtils;
 import com.warmthdawn.kubejsdebugadapter.utils.EvalUtils;
 import com.warmthdawn.kubejsdebugadapter.utils.VariableUtils;
-import com.warmthdawn.kubejsdebugadapter.data.IVariableTreeNode;
-import com.warmthdawn.kubejsdebugadapter.data.VariableScope;
+import com.warmthdawn.kubejsdebugadapter.data.variable.IVariableTreeNode;
+import com.warmthdawn.kubejsdebugadapter.data.variable.VariableScope;
 import dev.latvian.mods.rhino.ContextFactory;
 import dev.latvian.mods.rhino.Scriptable;
 import org.apache.logging.log4j.LogManager;
@@ -305,4 +305,6 @@ public class KubeDebugAdapter implements IDebugProtocolServer {
             return response;
         }, async);
     }
+
+
 }

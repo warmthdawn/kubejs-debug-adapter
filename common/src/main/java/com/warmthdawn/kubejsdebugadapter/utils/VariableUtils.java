@@ -1,5 +1,6 @@
 package com.warmthdawn.kubejsdebugadapter.utils;
 
+import com.warmthdawn.kubejsdebugadapter.api.DebuggableObject;
 import dev.latvian.mods.kubejs.recipe.RecipeFunction;
 import dev.latvian.mods.rhino.*;
 import dev.latvian.mods.rhino.util.DynamicFunction;

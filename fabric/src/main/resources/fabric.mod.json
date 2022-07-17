@@ -17,6 +17,9 @@
   "entrypoints": {
     "main": [
       "com.warmthdawn.kubejsdebugadapter.fabric.KubeJSDebugAdapterFabric"
+    ],
+    "mm:early_risers": [
+      "com.warmthdawn.kubejsdebugadapter.fabric.asm.EarlyRiser"
     ]
   },
   "mixins": [

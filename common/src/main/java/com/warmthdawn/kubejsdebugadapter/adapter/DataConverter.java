@@ -1,6 +1,10 @@
 package com.warmthdawn.kubejsdebugadapter.adapter;
 
 import com.warmthdawn.kubejsdebugadapter.data.*;
+import com.warmthdawn.kubejsdebugadapter.data.variable.ErrorVariable;
+import com.warmthdawn.kubejsdebugadapter.data.variable.IVariableTreeNode;
+import com.warmthdawn.kubejsdebugadapter.data.variable.KubeVariable;
+import com.warmthdawn.kubejsdebugadapter.data.variable.VariableScope;
 import com.warmthdawn.kubejsdebugadapter.debugger.DebugSession;
 import com.warmthdawn.kubejsdebugadapter.debugger.DebugThread;
 import com.warmthdawn.kubejsdebugadapter.debugger.KubeStackFrame;

@@ -9,7 +9,12 @@
     "MixinServerMain"
   ],
   "mixins": [
+    "MixinCodeGenerator",
     "MixinConsoleJS",
+    "MixinContext",
+    "MixinInnerCallFrame",
+    "MixinInnerContinuationJump",
+    "MixinInterpreterData",
     "MixinScriptManager"
   ],
   "injectors": {

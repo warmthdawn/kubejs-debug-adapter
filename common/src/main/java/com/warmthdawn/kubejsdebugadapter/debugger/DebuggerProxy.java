@@ -1,10 +1,10 @@
 package com.warmthdawn.kubejsdebugadapter.debugger;
 
 import com.warmthdawn.kubejsdebugadapter.adapter.DebuggerBridge;
+import com.warmthdawn.kubejsdebugadapter.api.DebugFrame;
+import com.warmthdawn.kubejsdebugadapter.api.DebuggableScript;
+import com.warmthdawn.kubejsdebugadapter.api.Debugger;
 import dev.latvian.mods.rhino.Context;
-import dev.latvian.mods.rhino.debug.DebugFrame;
-import dev.latvian.mods.rhino.debug.DebuggableScript;
-import dev.latvian.mods.rhino.debug.Debugger;
 
 
 public class DebuggerProxy implements Debugger {

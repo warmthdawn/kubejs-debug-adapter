@@ -1,10 +1,10 @@
 package com.warmthdawn.kubejsdebugadapter.debugger;
 
-import com.warmthdawn.kubejsdebugadapter.data.ErrorVariable;
+import com.warmthdawn.kubejsdebugadapter.data.variable.ErrorVariable;
 import com.warmthdawn.kubejsdebugadapter.utils.VariableUtils;
-import com.warmthdawn.kubejsdebugadapter.data.IVariableTreeNode;
-import com.warmthdawn.kubejsdebugadapter.data.KubeVariable;
-import com.warmthdawn.kubejsdebugadapter.data.VariableScope;
+import com.warmthdawn.kubejsdebugadapter.data.variable.IVariableTreeNode;
+import com.warmthdawn.kubejsdebugadapter.data.variable.KubeVariable;
+import com.warmthdawn.kubejsdebugadapter.data.variable.VariableScope;
 import dev.latvian.mods.rhino.ContextFactory;
 import dev.latvian.mods.rhino.Scriptable;
 import dev.latvian.mods.rhino.Undefined;

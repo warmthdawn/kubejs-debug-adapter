@@ -17,11 +17,7 @@ public class CompletionUtils {
     public static List<CompletionItem> complete(String expression, KubeStackFrame stackFrame) {
         ErrorCollector errorCollector = new ErrorCollector();
         CompilerEnvirons env = new CompilerEnvirons();
-        env.setRecoverFromErrors(true);
-        env.setRecordingComments(false);
         env.setStrictMode(false);
-        env.setWarnTrailingComma(false);
-        env.setIdeMode(true);
         env.setErrorReporter(errorCollector);
         Parser parser = new Parser(env);
         AstRoot parse = parser.parse(expression, "<eval>", 1);

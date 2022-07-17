@@ -1,10 +1,10 @@
-package com.warmthdawn.kubejsdebugadapter.data;
+package com.warmthdawn.kubejsdebugadapter.data.variable;
 
+import com.warmthdawn.kubejsdebugadapter.api.DebuggableScript;
 import com.warmthdawn.kubejsdebugadapter.debugger.DebugSession;
 import com.warmthdawn.kubejsdebugadapter.utils.PathUtil;
 import com.warmthdawn.kubejsdebugadapter.utils.VariableUtils;
 import dev.latvian.mods.rhino.ContextFactory;
-import dev.latvian.mods.rhino.debug.DebuggableScript;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -36,7 +36,7 @@ public class KubeVariable implements IVariableTreeNode {
             if (obj instanceof DebuggableScript && ((DebuggableScript) obj).isFunction()) {
                 if (((DebuggableScript) obj).getSourceName() != null) {
                     String source = PathUtil.getSourcePath(((DebuggableScript) obj).getSourceName()).toString();
-                    value = "@ " + source + ":" + ((DebuggableScript) obj).getLineNumbers()[0];
+                    value = "@ " + source + ":" + ((DebuggableScript) obj).firstLineNumber();
                 }
             }
             if (value == null) {

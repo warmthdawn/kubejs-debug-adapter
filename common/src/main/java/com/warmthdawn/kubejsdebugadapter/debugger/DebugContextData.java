@@ -1,6 +1,7 @@
 package com.warmthdawn.kubejsdebugadapter.debugger;
 
 import com.google.common.collect.ImmutableList;
+import com.warmthdawn.kubejsdebugadapter.api.IDebuggableContext;
 import dev.latvian.mods.rhino.Context;
 import dev.latvian.mods.rhino.ObjArray;
 
@@ -99,7 +100,10 @@ public class DebugContextData {
      * Returns the ContextData for the given Context.
      */
     public static DebugContextData get(Context cx) {
-        return (DebugContextData) cx.getDebuggerContextData();
+        if (cx instanceof IDebuggableContext dcx) {
+            return (DebugContextData) dcx.getDebuggerContextData();
+        }
+        return null;
     }
 
     /**

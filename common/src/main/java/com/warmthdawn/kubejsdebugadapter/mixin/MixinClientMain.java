@@ -13,7 +13,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import java.nio.file.Path;
 
-@Mixin(Main.class)
+@Mixin(value = Main.class, remap = false)
 public abstract class MixinClientMain {
 
 

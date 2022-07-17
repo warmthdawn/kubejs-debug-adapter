@@ -1,6 +1,18 @@
+//buildscript {
+//    repositories {
+//        maven { url = 'https://maven.moddingx.org' }
+//    }
+//
+//    dependencies {
+//        classpath "org.moddingx:ModGradle:3.0.0"
+//    }
+//
+//}
+
 plugins {
     id "com.github.johnrengelman.shadow" version "7.1.2"
 }
+//apply plugin: 'org.moddingx.modgradle.coremods'
 
 architectury {
     platformSetupLoomIde()
@@ -35,6 +47,8 @@ repositories {
             includeGroup "mezz.jei"
         }
     }
+
+//    maven { url = 'https://maven.moddingx.org' }
 }
 
 dependencies {
@@ -43,13 +57,15 @@ dependencies {
     modApi "dev.architectury:architectury-forge:${rootProject.architectury_version}"
     modApi("dev.latvian.mods:rhino-forge:${rootProject.rhino_version}")
     modApi "dev.latvian.mods:kubejs-forge:${rootProject.kubejs_version}"
+//    coremods 'org.moddingx:CoreModTypes:5.0.2-2'
 
     modLocalRuntime("mezz.jei:jei-1.18.2:${rootProject.forge_jei_version}")
+    implementation(forgeDependencies('org.eclipse.lsp4j:org.eclipse.lsp4j.debug:0.14.0'))
     shadowCommon 'org.eclipse.lsp4j:org.eclipse.lsp4j.debug:0.14.0'
-    implementation 'org.eclipse.lsp4j:org.eclipse.lsp4j.debug:0.14.0'
 
     common(project(path: ":common", configuration: "namedElements")) { transitive false }
     shadowCommon(project(path: ":common", configuration: "transformProductionForge")) { transitive = false }
+
 }
 
 processResources {
