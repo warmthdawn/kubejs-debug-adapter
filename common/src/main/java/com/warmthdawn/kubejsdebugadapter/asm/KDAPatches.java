@@ -7,12 +7,19 @@ import dev.latvian.mods.rhino.*;
 import static dev.latvian.mods.rhino.UniqueTag.DOUBLE_MARK;
 
 public class KDAPatches {
-    public static boolean processExtraOp(Context cx, int op, Object frameObj) {
+    public static boolean processExtraOp(Context cx, int op, Object frameObj, byte[] iCode) {
         if (frameObj instanceof IDebuggableCallFrame frame) {
-            if (op == ExtendedConst.Icode_BREAKPOINT) {
+            if (op == ExtendedConst.Icode_STATEMENT_BREAK) {
                 if (frame.getDebuggerFrame() != null) {
-                    int line = frame.readBreakpointLocation();
-                    frame.getDebuggerFrame().onPossibleBreakpoint(cx, line);
+                    int line = frame.readBreakpointMeta(iCode);
+                    frame.getDebuggerFrame().onBreakableStatement(cx, line);
+                }
+                frame.increasePC(2);
+                return true;
+            } else if (op == ExtendedConst.Icode_EXPRESSION_BREAK) {
+                if (frame.getDebuggerFrame() != null) {
+                    int line = frame.readBreakpointMeta(iCode);
+                    frame.getDebuggerFrame().onBreakableExpression(cx, line);
                 }
                 frame.increasePC(2);
                 return true;

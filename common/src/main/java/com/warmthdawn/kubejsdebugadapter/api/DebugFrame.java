@@ -18,7 +18,8 @@ import dev.latvian.mods.rhino.Scriptable;
 public interface DebugFrame {
 
 
-    void onPossibleBreakpoint(Context cx, int location);
+    void onBreakableStatement(Context cx, int meta);
+    void onBreakableExpression(Context cx, int meta);
 
     /**
      * Called when execution is ready to start bytecode interpretation for entered a particular

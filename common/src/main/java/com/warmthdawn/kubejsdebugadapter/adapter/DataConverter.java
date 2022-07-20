@@ -19,25 +19,34 @@ import java.util.List;
 import java.util.function.Consumer;
 
 public class DataConverter {
-    private boolean linesStartAt1;
+    private final boolean linesStartAt1;
+    private final boolean columnsStartAt1;
 
-    public DataConverter(boolean linesStartAt1) {
+    public DataConverter(boolean linesStartAt1, boolean columnsStartAt1) {
         this.linesStartAt1 = linesStartAt1;
+        this.columnsStartAt1 = columnsStartAt1;
     }
 
     public int toDAPLineNumber(int lineNumber) {
-        return linesStartAt1 ? lineNumber : lineNumber - 1;
+        return linesStartAt1 ? lineNumber + 1 : lineNumber;
     }
 
+    public int toDAPColumnNumber(int columnNumber) {
+        return columnsStartAt1 ? columnNumber + 1 : columnNumber;
+    }
 
     public int toKubeLineNumber(int lineNumber) {
-        return linesStartAt1 ? lineNumber : lineNumber + 1;
+        return linesStartAt1 ? lineNumber - 1 : lineNumber;
+    }
+
+    public int toKubeColumnNumber(int columnNumber) {
+        return columnsStartAt1 ? columnNumber - 1 : columnNumber;
     }
 
 
-    public List<Breakpoint> convertDAPBreakpoints(Source source, List<ScriptBreakpoint> breakpoints, Consumer<Breakpoint> consumer) {
+    public List<Breakpoint> convertDAPBreakpoints(Source source, List<UserDefinedBreakpoint> breakpoints, Consumer<Breakpoint> consumer) {
         List<Breakpoint> result = new ArrayList<>();
-        for (ScriptBreakpoint breakpoint : breakpoints) {
+        for (UserDefinedBreakpoint breakpoint : breakpoints) {
             Breakpoint b = toDAPBreakpoint(source, consumer, breakpoint);
             result.add(b);
         }
@@ -45,18 +54,20 @@ public class DataConverter {
     }
 
     @NotNull
-    public Breakpoint toDAPBreakpoint(Source source, Consumer<Breakpoint> consumer, ScriptBreakpoint breakpoint) {
+    public Breakpoint toDAPBreakpoint(Source source, Consumer<Breakpoint> consumer, UserDefinedBreakpoint breakpoint) {
         Breakpoint b = new Breakpoint();
         b.setLine(toDAPLineNumber(breakpoint.getLine()));
+        b.setColumn(toDAPColumnNumber(breakpoint.getColumn()));
         b.setSource(source);
         consumer.accept(b);
         return b;
     }
 
-    public ScriptBreakpoint convertScriptBreakpoint(SourceBreakpoint breakpoint, String source, int id) {
-        ScriptBreakpoint result = new ScriptBreakpoint();
+    public UserDefinedBreakpoint convertScriptBreakpoint(SourceBreakpoint breakpoint, String source, int id) {
+        UserDefinedBreakpoint result = new UserDefinedBreakpoint();
 
         result.setLine(toKubeLineNumber(breakpoint.getLine()));
+        result.setColumn(toKubeLineNumber(breakpoint.getColumn()));
         return result;
     }
 
@@ -69,7 +80,11 @@ public class DataConverter {
             session.addStackFrame(kubeStackFrame);
             stackFrame.setId(kubeStackFrame.getId());
             stackFrame.setSource(PathUtil.getDAPSource(kubeStackFrame.getSource()));
-            stackFrame.setLine(toDAPLineNumber(kubeStackFrame.currentLine()));
+            stackFrame.setLine(toDAPLineNumber(kubeStackFrame.getLine()));
+            stackFrame.setColumn(toDAPColumnNumber(kubeStackFrame.getColumn()));
+            stackFrame.setEndLine(toDAPLineNumber(kubeStackFrame.getEndLine()));
+            stackFrame.setEndColumn(toDAPColumnNumber(kubeStackFrame.getEndColumn()));
+
             result[i] = stackFrame;
         }
 

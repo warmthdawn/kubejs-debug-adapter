@@ -4,6 +4,7 @@ import com.warmthdawn.kubejsdebugadapter.adapter.DebuggerBridge;
 import com.warmthdawn.kubejsdebugadapter.api.DebugFrame;
 import com.warmthdawn.kubejsdebugadapter.api.DebuggableScript;
 import com.warmthdawn.kubejsdebugadapter.api.Debugger;
+import com.warmthdawn.kubejsdebugadapter.data.breakpoint.ScriptSourceData;
 import dev.latvian.mods.rhino.Context;
 
 
@@ -20,6 +21,10 @@ public class DebuggerProxy implements Debugger {
 
     @Override
     public void handleCompilationDone(Context cx, DebuggableScript fnOrScript, String sourceString) {
+        DebugContextData contextData = DebugContextData.get(cx);
+        if (contextData.isEvaluating()) {
+            return;
+        }
         if (!fnOrScript.isTopLevel()) {
             return;
         }
@@ -28,11 +33,12 @@ public class DebuggerProxy implements Debugger {
 
 
         DebuggerBridge bridge = runtime.getBridge();
+        if (sourceName != null) {
+            runtime.getSourceManager().setSourceLoaded(sourceName, true);
+        }
         if (sourceName != null && bridge != null) {
             bridge.notifySource(sourceName);
         }
-
-
 
 
     }
@@ -40,10 +46,16 @@ public class DebuggerProxy implements Debugger {
     @Override
     public DebugFrame getFrame(Context cx, DebuggableScript fnOrScript) {
 
-        return new KubeStackFrame(
-            runtime.nextFrameId(),
-            runtime,
-            fnOrScript,
-            cx.getFactory());
+        String sourceName = fnOrScript.getSourceName();
+        ScriptSourceData scriptSourceData = runtime.getSourceManager().getSourceData(sourceName);
+        if (scriptSourceData != null && runtime.getSourceManager().isSourceLoaded(sourceName)) {
+            return new KubeStackFrame(
+                runtime.nextFrameId(),
+                runtime,
+                fnOrScript,
+                cx.getFactory(),
+                scriptSourceData);
+        }
+        return null;
     }
 }

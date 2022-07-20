@@ -1,15 +1,13 @@
 package com.warmthdawn.kubejsdebugadapter.adapter;
 
-import com.warmthdawn.kubejsdebugadapter.data.ScriptBreakpoint;
+import com.warmthdawn.kubejsdebugadapter.data.UserDefinedBreakpoint;
+import com.warmthdawn.kubejsdebugadapter.data.breakpoint.BreakpointMeta;
 import com.warmthdawn.kubejsdebugadapter.debugger.BreakpointManager;
-import com.warmthdawn.kubejsdebugadapter.utils.PathUtil;
-import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
-import it.unimi.dsi.fastutil.ints.IntSet;
+import com.warmthdawn.kubejsdebugadapter.utils.LocationParser;
 import org.eclipse.lsp4j.debug.*;
 import org.eclipse.lsp4j.debug.services.IDebugProtocolClient;
 
 import java.util.Calendar;
-import java.util.List;
 
 public class DebuggerBridge {
     private final IDebugProtocolClient client;
@@ -24,14 +22,14 @@ public class DebuggerBridge {
         return breakpointManager;
     }
 
-    public boolean hasBreakpointAt(String source, int lineNumber) {
-        for (ScriptBreakpoint breakpoint : breakpointManager.getBreakpoints(source)) {
-            if (breakpoint.getLine() == lineNumber) {
-                return true;
-            }
+    public UserDefinedBreakpoint getBreakpointAt(String source, LocationParser parser, BreakpointMeta meta) {
+        for (UserDefinedBreakpoint breakpoint : breakpointManager.getBreakpoints(source)) {
+//            if (breakpoint.getLine() == lineNumber) {
+//                return true;
+//            }
         }
 
-        return false;
+        return null;
     }
 
     public boolean hasFunctionBreakpointFor(String functionName) {

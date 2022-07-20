@@ -65,5 +65,5 @@ public interface DebuggableScript {
 
     DebuggableScript getParent();
 
-    ScriptDebuggerData getDebuggerData();
+    int getFunctionScriptId();
 }

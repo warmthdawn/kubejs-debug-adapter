@@ -34,10 +34,9 @@ public class LocationParser {
     public ScriptLocation toLocation(int index) {
         int lineIndex = binarySearchIndexLessThan(index);
 
-        int line = lineIndex + 1;
-        int column = index - lineStartIndexes[lineIndex] + 1;
+        int columnIndex = index - lineStartIndexes[lineIndex];
 
-        return new ScriptLocation(line, column, sourceName);
+        return new ScriptLocation(lineIndex, columnIndex, sourceName);
     }
 
     private int binarySearchIndexLessThan(int index) {
@@ -62,8 +61,8 @@ public class LocationParser {
         if(!Objects.equals(location.getSourceName(), sourceName)) {
             return -1;
         }
-        int lineIndex = location.getLineNumber() - 1;
-        int columnIndex = location.getColumnNumber() - 1;
+        int lineIndex = location.getLineNumber();
+        int columnIndex = location.getColumnNumber();
 
         return lineStartIndexes[lineIndex] + columnIndex;
     }

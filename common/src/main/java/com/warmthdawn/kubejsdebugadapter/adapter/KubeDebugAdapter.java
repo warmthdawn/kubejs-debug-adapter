@@ -50,7 +50,7 @@ public class KubeDebugAdapter implements IDebugProtocolServer {
     @Override
     public CompletableFuture<Capabilities> initialize(InitializeRequestArguments args) {
 
-        converter = new DataConverter(args.getLinesStartAt1());
+        converter = new DataConverter(args.getLinesStartAt1(), args.getColumnsStartAt1());
 
 
         Capabilities capabilities = new Capabilities();

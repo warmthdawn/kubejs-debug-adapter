@@ -1,7 +1,6 @@
 package com.warmthdawn.kubejsdebugadapter.mixin;
 
 import com.warmthdawn.kubejsdebugadapter.KubeJSDebugAdapter;
-import com.warmthdawn.kubejsdebugadapter.utils.AstUtils;
 import com.warmthdawn.kubejsdebugadapter.utils.ExtendedConst;
 import dev.latvian.mods.rhino.IRFactory;
 import dev.latvian.mods.rhino.Node;
@@ -26,7 +25,6 @@ public abstract class MixinIRFactory extends Parser {
         // 把方法调用表达式左括号的位置记下来
         returnValue.putIntProp(ExtendedConst.RC_LOCATION_PROP, node.getLp() + node.getAbsolutePosition());
     }
-
 
     // 在转换表达式的时候，保存名字标签的位置
 
@@ -66,15 +64,41 @@ public abstract class MixinIRFactory extends Parser {
     @Inject(method = "transformReturn", at = @At("RETURN"))
     private void inject_transformReturn(ReturnStatement node, CallbackInfoReturnable<Node> cir) {
         Node returnValue = cir.getReturnValue();
-        AstNode rv = node.getReturnValue();
-        if (rv == null) {
-            // 无返回值的return，断点标在return前面，标记一下return的位置。
-            returnValue.putIntProp(ExtendedConst.RETURN_LOCATION_PROP, node.getAbsolutePosition());
-        }
-
-
+        // 标记一下return的位置。
+        returnValue.putIntProp(ExtendedConst.TOKEN_LOCATION_PROP, node.getAbsolutePosition());
     }
 
+
+    @Inject(method = "transformYield", at = @At("RETURN"))
+    private void inject_transformYield(Yield node, CallbackInfoReturnable<Node> cir) {
+        Node returnValue = cir.getReturnValue();
+        // 标记一下return的位置。
+        returnValue.putIntProp(ExtendedConst.TOKEN_LOCATION_PROP, node.getAbsolutePosition());
+    }
+
+
+    @Inject(method = "transformObjectLiteral", at = @At("RETURN"))
+    private void inject_transformObjectLiteral(ObjectLiteral node, CallbackInfoReturnable<Node> cir) {
+        Node returnValue = cir.getReturnValue();
+        // 标记一下ObjectLiteral大括号的位置
+        returnValue.putIntProp(ExtendedConst.RC_LOCATION_PROP, node.getAbsolutePosition());
+    }
+    @Inject(method = "transformArrayLiteral", at = @At("RETURN"))
+    private void inject_transformArrayLiteral(ArrayLiteral node, CallbackInfoReturnable<Node> cir) {
+        Node returnValue = cir.getReturnValue();
+        // 标记一下ObjectLiteral大括号的位置
+        returnValue.putIntProp(ExtendedConst.RP_LOCATION_PROP, node.getAbsolutePosition());
+    }
+    @Inject(method = "transformString", at = @At("RETURN"))
+    private void inject_transformString(StringLiteral node, CallbackInfoReturnable<Node> cir) {
+        Node returnValue = cir.getReturnValue();
+        copyPosition(returnValue, node);
+    }
+    @Inject(method = "transformTemplateLiteral", at = @At("RETURN"))
+    private void inject_transformTemplateLiteral(TemplateLiteral node, CallbackInfoReturnable<Node> cir) {
+        Node returnValue = cir.getReturnValue();
+        copyPosition(returnValue, node);
+    }
 
     private static void copyPosition(Node node, AstNode old) {
         if (old == null) {

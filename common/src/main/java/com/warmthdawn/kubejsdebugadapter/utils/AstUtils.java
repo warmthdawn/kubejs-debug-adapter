@@ -82,15 +82,16 @@ public class AstUtils {
         };
     }
 
-    public static AstNode findFirstLiteralOrIdentifier(Node node) {
+    public static Node findFirstLocationalNode(Node node) {
         Node it = node;
 
         while (it != null) {
-            if (it instanceof Name) {
-                return (Name) it;
-            }
             if (it instanceof AstNode && isLiteralOrIdentifier(it)) {
-                return (AstNode) it;
+                return it;
+            }
+            int type = it.getType();
+            if(type == Token.OBJECTLIT || type == Token.ARRAYLIT) {
+                return it;
             }
 
             it = it.getFirstChild();

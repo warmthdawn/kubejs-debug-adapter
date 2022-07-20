@@ -20,6 +20,6 @@ public interface IDebuggableCallFrame {
 
     void increasePC(int inc);
 
-    int readBreakpointLocation();
+    int readBreakpointMeta(byte[] iCode);
 
 }

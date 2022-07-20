@@ -13,6 +13,5 @@ public class MixinIcode {
     @Shadow
     @Final
     @Mutable
-    static int MIN_ICODE = -68;
-
+    static int MIN_ICODE = -69;
 }

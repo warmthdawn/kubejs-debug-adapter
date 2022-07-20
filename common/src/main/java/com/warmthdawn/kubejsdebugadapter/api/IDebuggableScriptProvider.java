@@ -4,9 +4,8 @@ import com.warmthdawn.kubejsdebugadapter.data.ScriptBreakpointData;
 import com.warmthdawn.kubejsdebugadapter.data.ScriptDebuggerData;
 
 public interface IDebuggableScriptProvider {
-    ScriptDebuggerData getDebuggerData();
 
-    void setDebuggerData(ScriptDebuggerData breakpointData);
+    void setFunctionScriptId(int id);
 
     DebuggableScript getDebuggableScript();
 }

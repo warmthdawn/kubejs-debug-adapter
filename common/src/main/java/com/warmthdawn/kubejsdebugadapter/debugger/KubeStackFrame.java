@@ -3,9 +3,14 @@ package com.warmthdawn.kubejsdebugadapter.debugger;
 import com.warmthdawn.kubejsdebugadapter.adapter.DebuggerBridge;
 import com.warmthdawn.kubejsdebugadapter.api.DebugFrame;
 import com.warmthdawn.kubejsdebugadapter.api.DebuggableScript;
-import dev.latvian.mods.rhino.Context;
-import dev.latvian.mods.rhino.ContextFactory;
-import dev.latvian.mods.rhino.Scriptable;
+import com.warmthdawn.kubejsdebugadapter.data.ScriptLocation;
+import com.warmthdawn.kubejsdebugadapter.data.UserDefinedBreakpoint;
+import com.warmthdawn.kubejsdebugadapter.data.breakpoint.BreakpointMeta;
+import com.warmthdawn.kubejsdebugadapter.data.breakpoint.FunctionSourceData;
+import com.warmthdawn.kubejsdebugadapter.data.breakpoint.ScriptSourceData;
+import com.warmthdawn.kubejsdebugadapter.data.breakpoint.StatementBreakpointMeta;
+import com.warmthdawn.kubejsdebugadapter.utils.LocationParser;
+import dev.latvian.mods.rhino.*;
 import org.eclipse.lsp4j.debug.StoppedEventArgumentsReason;
 
 public class KubeStackFrame implements DebugFrame {
@@ -13,13 +18,14 @@ public class KubeStackFrame implements DebugFrame {
 
     private final String[] paramNames;
 
-    public KubeStackFrame(int id, DebugRuntime runtime, DebuggableScript function, ContextFactory factory) {
+    public KubeStackFrame(int id, DebugRuntime runtime, DebuggableScript function, ContextFactory factory, ScriptSourceData scriptSourceData) {
         this.id = id;
         this.runtime = runtime;
         this.source = function.getSourceName();
         this.functionName = function.getFunctionName();
         this.factory = factory;
-
+        this.sourceData = scriptSourceData.getFunction(function.getFunctionScriptId());
+        this.locationParser = scriptSourceData.getLocationParser();
         int paramCount = function.getParamCount();
         String[] paramNames = new String[paramCount];
         for (int i = 0; i < paramCount; i++) {
@@ -31,16 +37,53 @@ public class KubeStackFrame implements DebugFrame {
 
 
     private final int id;
+    private final FunctionSourceData sourceData;
+    private final LocationParser locationParser;
     private final ContextFactory factory;
     private final String functionName;
     private final String source;
     private final DebugRuntime runtime;
-    private int currentLineNumber = 0;
 
     private Scriptable thisObj;
     private Object[] args;
     private Scriptable scope;
 
+    private boolean interrupted = false;
+    private ScriptLocation location = null;
+    private ScriptLocation endLocation = null;
+
+
+    public boolean isInterrupted() {
+        return interrupted;
+    }
+
+    public int getLine() {
+        if(location == null) {
+            return -1;
+        }
+        return location.getLineNumber();
+    }
+
+    public int getColumn() {
+        if(location == null) {
+            return -1;
+        }
+        return location.getColumnNumber();
+    }
+
+    public int getEndLine() {
+        if(endLocation == null) {
+            return -1;
+        }
+        return endLocation.getLineNumber();
+    }
+
+    public int getEndColumn() {
+        if(endLocation == null) {
+            return -1;
+        }
+        return endLocation.getColumnNumber();
+    }
 
     private void handlePause(Context cx, String reason) {
         handlePause(cx, reason, true);
@@ -60,16 +103,14 @@ public class KubeStackFrame implements DebugFrame {
         if (interrupt) {
             DebugThread thread = runtime.getThread(cx);
             bridge.notifyStop(thread.id(), reason);
+            this.interrupted = true;
             //暂停脚本执行
             thread.interrupt();
+            this.interrupted = false;
         }
         data.clearStepInfo();
     }
 
-    @Override
-    public void onPossibleBreakpoint(Context cx, int location) {
-
-    }
 
     @Override
     public void onEnter(Context cx, Scriptable activation, Scriptable thisObj, Object[] args) {
@@ -93,27 +134,68 @@ public class KubeStackFrame implements DebugFrame {
         }
     }
 
-    public void onLineChange(Context cx, int lineNumber) {
-        this.currentLineNumber = lineNumber;
+    private void updatePosition(int position, int length) {
+        location = locationParser.toLocation(position);
+        endLocation = locationParser.toLocation(position + length);
+    }
+
+    private boolean handleCommonBreakable(DebugContextData data, DebuggerBridge bridge, Context cx, BreakpointMeta meta) {
+        if (data.isEvaluating()) {
+            return true;
+        }
+        // 暂停
+        if (bridge.shouldPause() || data.shouldPause()) {
+            handlePause(cx, StoppedEventArgumentsReason.PAUSE);
+            return true;
+        }
+        if (meta == null) {
+            return false;
+        }
+
+        UserDefinedBreakpoint userDefinedBreakpoint = bridge.getBreakpointAt(this.source, locationParser, meta);
+        // 是否有断点
+        if (userDefinedBreakpoint != null) {
+            // TODO: 其他的断点类型
+            handlePause(cx, StoppedEventArgumentsReason.BREAKPOINT);
+            return true;
+        }
+        return false;
+    }
+
+    @Override
+    public void onBreakableStatement(Context cx, int meta) {
         DebuggerBridge bridge = runtime.getBridge();
         if (bridge == null) {
             return;
         }
         DebugContextData data = DebugContextData.get(cx);
-        // 暂停
-        if (bridge.shouldPause() || data.shouldPause()) {
-            handlePause(cx, StoppedEventArgumentsReason.PAUSE);
+        StatementBreakpointMeta breakpointMeta = sourceData.getStatementBreakpointMeta(meta);
+        updatePosition(breakpointMeta.getPosition(), breakpointMeta.getLength());
+        if (!breakpointMeta.shouldBreakHere()) {
+            breakpointMeta = null;
+        }
+        if (handleCommonBreakable(data, bridge, cx, breakpointMeta)) {
             return;
         }
-        // 是否有断点
-        if (bridge.hasBreakpointAt(this.source, lineNumber)) {
-            handlePause(cx, StoppedEventArgumentsReason.BREAKPOINT);
-            return;
-        }
+
         // 是否正在进行单步调试
         if (data.shouldPauseStep()) {
             handlePause(cx, StoppedEventArgumentsReason.STEP);
         }
+    }
+
+    @Override
+    public void onBreakableExpression(Context cx, int meta) {
+        DebuggerBridge bridge = runtime.getBridge();
+        if (bridge == null) {
+            return;
+        }
+        DebugContextData data = DebugContextData.get(cx);
+
+        BreakpointMeta breakpointMeta = sourceData.getExpressionBreakpointMeta(meta);
+        updatePosition(breakpointMeta.getPosition(), breakpointMeta.getLength());
+        handleCommonBreakable(data, bridge, cx, breakpointMeta);
+
     }
 
     @Override
@@ -122,6 +204,7 @@ public class KubeStackFrame implements DebugFrame {
         if (bridge == null) {
             return;
         }
+        // TODO: 异常位置
         // 是否有异常断点
         if (bridge.shouldPauseOnException(ex)) {
             handlePause(cx, StoppedEventArgumentsReason.EXCEPTION);
@@ -142,10 +225,6 @@ public class KubeStackFrame implements DebugFrame {
         }
         // js debugger;语句，直接断！
         handlePause(cx, StoppedEventArgumentsReason.BREAKPOINT);
-    }
-
-    public int currentLine() {
-        return currentLineNumber;
     }
 
     public int getId() {

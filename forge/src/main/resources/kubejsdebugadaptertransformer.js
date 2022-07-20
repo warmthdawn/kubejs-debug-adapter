@@ -55,17 +55,23 @@ function initializeCoreMod() {
                         print("KubeJS Debug Adapter Transforming: Finding iCode[frame.pc++]...")
                         // 找到 int op = iCode[frame.pc++];
                         // 确保四条关键指令存在基本上久差不多了： 读icode, 读frame.pc，frame.pc，写 op
+                        var iCodePos = -1;
                         var hasGetFrame = false;
                         var hasGetPC = false;
                         var hasPutPC = false;
                         var verified = false;
 
                         var j = i + 1;
+                        var insn, prevInsn;
                         // 简单确保一些这段代码包括下面几个指令
                         for (; j < arrayLength; j++) {
-                            var insn = method.instructions.get(j);
+                            insn = method.instructions.get(j);
                             if (insn.getOpcode() === Opcodes.ALOAD && insn.var === 1) {
-                                hasGetFrame = true;
+                                prevInsn = method.instructions.get(j - 1);
+                                if (prevInsn.getOpcode() === Opcodes.ALOAD) {
+                                    iCodePos = prevInsn.var;
+                                    hasGetFrame = true;
+                                }
                             }
                             if (hasGetFrame &&
                                 insn.getOpcode() === Opcodes.GETFIELD &&
@@ -96,11 +102,11 @@ function initializeCoreMod() {
                         // 找switch:
 
                         for (; j < arrayLength; j++) {
-                            var insn = method.instructions.get(j);
+                            insn = method.instructions.get(j);
                             if (insn.getOpcode() !== Opcodes.TABLESWITCH) {
                                 continue;
                             }
-                            var prevInsn = method.instructions.get(j - 1);
+                            prevInsn = method.instructions.get(j - 1);
                             //确保一下switch的参数正确
                             if (prevInsn.getOpcode() !== Opcodes.ILOAD ||
                                 prevInsn.var !== opPos) {
@@ -120,7 +126,7 @@ function initializeCoreMod() {
                         // 插入指令
 
                         /**
-                         * boolean flag = processExtraOp(op, frame)
+                         * boolean flag = processExtraOp(this, op, frame, iCode)
                          * if(flag) {
                          *     continue;
                          * }
@@ -128,8 +134,10 @@ function initializeCoreMod() {
 
                         /**
                          * =>
+                         * ALOAD 0
                          * ILOAD $opPos
                          * ALOAD 1
+                         * ALOAD $iCodePos
                          * INVOKESTATIC Lcom/warmthdawn/kubejsdebugadapter/asm/KDAPatches;processExtraOp(Ldev/latvian/mods/rhino/Context;ILjava/lang/Object;)Z
                          *
                          * IFNE $loopLabel
@@ -139,6 +147,7 @@ function initializeCoreMod() {
                         toInject.add(new VarInsnNode(Opcodes.ALOAD, 0));
                         toInject.add(new VarInsnNode(Opcodes.ILOAD, opPos));
                         toInject.add(new VarInsnNode(Opcodes.ALOAD, 1));
+                        toInject.add(new VarInsnNode(Opcodes.ALOAD, iCodePos));
                         toInject.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "com/warmthdawn/kubejsdebugadapter/asm/KDAPatches", "processExtraOp", "(Ldev/latvian/mods/rhino/Context;ILjava/lang/Object;)Z"));
                         toInject.add(new JumpInsnNode(Opcodes.IFNE, new LabelNode(loopLabel)));
 
@@ -245,7 +254,6 @@ function initializeCoreMod() {
                 return method;
             }
         },
-
 
 
         m_callFrame_init: {

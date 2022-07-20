@@ -1,9 +1,9 @@
 package com.warmthdawn.kubejsdebugadapter.data;
 
 public class ScriptLocation {
-    private int lineNumber;
-    private int columnNumber;
-    private String sourceName;
+    private final int lineNumber;
+    private final int columnNumber;
+    private final String sourceName;
 
     public ScriptLocation(int lineNumber, int columnNumber, String sourceName) {
         this.lineNumber = lineNumber;

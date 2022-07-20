@@ -23,6 +23,8 @@ public class DebugRuntime {
     private final Map<Integer, DebugThread> threadMap = new ConcurrentHashMap<>();
     private final Map<Context, Integer> contextThreadMap = new ConcurrentHashMap<>();
 
+    private final SourceManager sourceManager = new SourceManager();
+
 
     private int threadId = 0;
     private int frameId = 0;
@@ -48,6 +50,10 @@ public class DebugRuntime {
 
     public DebuggerBridge getBridge() {
         return bridge;
+    }
+
+    public SourceManager getSourceManager() {
+        return sourceManager;
     }
 
     public DebugThread newThread(Context cx, String name) {

@@ -2,8 +2,6 @@ package com.warmthdawn.kubejsdebugadapter.mixin;
 
 import com.warmthdawn.kubejsdebugadapter.api.DebuggableScript;
 import com.warmthdawn.kubejsdebugadapter.api.IDebuggableScriptProvider;
-import com.warmthdawn.kubejsdebugadapter.data.ScriptBreakpointData;
-import com.warmthdawn.kubejsdebugadapter.data.ScriptDebuggerData;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
@@ -29,17 +27,12 @@ public abstract class MixinInterpreterData implements IDebuggableScriptProvider 
     boolean topLevel;
     private DebuggableScript data;
 
-    private ScriptDebuggerData breakpointData;
+    private int functionScriptId;
 
 
     @Override
-    public ScriptDebuggerData getDebuggerData() {
-        return breakpointData;
-    }
-
-    @Override
-    public void setDebuggerData(ScriptDebuggerData breakpointData) {
-        this.breakpointData = breakpointData;
+    public void setFunctionScriptId(int functionScriptId) {
+        this.functionScriptId = functionScriptId;
     }
 
     @Inject(method = "init", at = @At("RETURN"))
@@ -134,8 +127,8 @@ public abstract class MixinInterpreterData implements IDebuggableScriptProvider 
                 }
 
                 @Override
-                public ScriptDebuggerData getDebuggerData() {
-                    return breakpointData;
+                public int getFunctionScriptId() {
+                    return functionScriptId;
                 }
             };
         } catch (NoSuchFieldException e) {

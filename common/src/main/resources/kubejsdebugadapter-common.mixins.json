@@ -17,6 +17,7 @@
     "MixinInnerContinuationJump",
     "MixinInterpreterData",
     "MixinIRFactory",
+    "MixinScriptFile",
     "MixinScriptManager"
   ],
   "injectors": {

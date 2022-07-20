@@ -3,19 +3,24 @@ package com.warmthdawn.kubejsdebugadapter.mixin;
 
 import com.warmthdawn.kubejsdebugadapter.KubeJSDebugAdapter;
 import com.warmthdawn.kubejsdebugadapter.api.IDebuggableScriptProvider;
-import com.warmthdawn.kubejsdebugadapter.data.ScriptDebuggerData;
+import com.warmthdawn.kubejsdebugadapter.data.breakpoint.BreakpointMeta;
+import com.warmthdawn.kubejsdebugadapter.data.breakpoint.FunctionSourceData;
+import com.warmthdawn.kubejsdebugadapter.data.breakpoint.ScriptSourceData;
+import com.warmthdawn.kubejsdebugadapter.debugger.DebugRuntime;
 import com.warmthdawn.kubejsdebugadapter.utils.AstUtils;
 import com.warmthdawn.kubejsdebugadapter.utils.ExtendedConst;
 import dev.latvian.mods.rhino.*;
 import dev.latvian.mods.rhino.ast.*;
+import it.unimi.dsi.fastutil.ints.IntStack;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.lang.reflect.Field;
+import java.util.ArrayDeque;
+import java.util.LinkedList;
 
 @Mixin(targets = "dev.latvian.mods.rhino.CodeGenerator", remap = false)
 public abstract class MixinCodeGenerator {
@@ -23,6 +28,12 @@ public abstract class MixinCodeGenerator {
 
     @Shadow
     private ScriptNode scriptOrFn;
+
+    @Shadow
+    protected abstract void addIcode(int icode);
+
+    @Shadow
+    protected abstract void addUint16(int value);
     private static Field itsDataField;
 
     private IDebuggableScriptProvider getData() {
@@ -39,39 +50,78 @@ public abstract class MixinCodeGenerator {
             return null;
         }
     }
+    private FunctionSourceData functionSourceData;
 
-
-    @Inject(method = "compile", at = @At("HEAD"))
-    private void inject_compile(CompilerEnvirons compilerEnv, ScriptNode tree, boolean returnFunction, CallbackInfoReturnable<Object> cir) {
-
-        KubeJSDebugAdapter.log.info("-----------------------------------");
-        KubeJSDebugAdapter.log.info(AstUtils.printNode(tree));
-        KubeJSDebugAdapter.log.info("-----------------------------------");
+    private void addStatementBreakpointMeta(int position, int length, boolean mustBreak) {
+        if (length < 0) {
+            length = 0;
+        }
+        BreakpointMeta breakpointMeta = functionSourceData.addStatementBreakpointMeta(position, length, mustBreak);
+        statementMetaStack.pop();
+        statementMetaStack.push(breakpointMeta.getId());
+        addIcode(ExtendedConst.Icode_STATEMENT_BREAK);
+        addUint16(breakpointMeta.getId());
 
     }
+
+    private void addExpressionBreakpointMeta(int position, int length) {
+        if (length < 0) {
+            length = 0;
+        }
+        BreakpointMeta breakpointMeta = functionSourceData.addExpressionBreakpointMeta(position, length);
+
+        Integer statementId = statementMetaStack.peek();
+        if (statementId == null) {
+            throw Kit.codeBug();
+        }
+        if (statementId >= 0) {
+            functionSourceData.getStatementBreakpointMeta(statementId).addChild(breakpointMeta);
+        }
+        addIcode(ExtendedConst.Icode_EXPRESSION_BREAK);
+        addUint16(breakpointMeta.getId());
+
+    }
+
+    private boolean hasSourceFile = false;
+
 
     @Inject(method = "generateFunctionICode", at = @At("HEAD"))
     private void inject_generateFunctionICode(CallbackInfo ci) {
-        IDebuggableScriptProvider data = getData();
-        if (data == null) {
-            throw Kit.codeBug();
+
+        String sourceName = this.scriptOrFn.getSourceName();
+        if (sourceName == null) {
+            return;
         }
+        hasSourceFile = true;
+
+        if (this.functionSourceData != null) {
+            throw Kit.codeBug("Called generateFunctionICode twice");
+        }
+        ScriptSourceData sourceData = DebugRuntime.getInstance().getSourceManager().getSourceData(this.scriptOrFn.getSourceName());
 
         FunctionNode theFunction = (FunctionNode) scriptOrFn;
+        this.functionSourceData = sourceData.addFunction(theFunction);
+        getData().setFunctionScriptId(functionSourceData.getId());
 
-        int start = theFunction.getPosition();
-        int end = theFunction.getLength() + start;
+    }
 
-        ScriptDebuggerData debuggerData = new ScriptDebuggerData(start, end);
-        data.setDebuggerData(debuggerData);
+    private final ArrayDeque<Integer> statementMetaStack = new ArrayDeque<>();
+
+    @Inject(method = "visitStatement", at = @At("RETURN"))
+    private void inject_visitStatement_RETURN(Node node, int initialStackDepth, CallbackInfo ci) {
+        if (!hasSourceFile) {
+            return;
+        }
+        statementMetaStack.pop();
     }
 
     @Inject(method = "visitStatement", at = @At("HEAD"))
-    private void inject_visitStatement(Node node, int initialStackDepth, CallbackInfo ci) {
-        IDebuggableScriptProvider data = getData();
-        if (data == null) {
-            throw Kit.codeBug();
+    private void inject_visitStatement_HEAD(Node node, int initialStackDepth, CallbackInfo ci) {
+        if (!hasSourceFile) {
+            return;
         }
+        statementMetaStack.push(-1);
+
         int type = node.getType();
 
         // 这几条语句需要特殊处理
@@ -94,66 +144,81 @@ public abstract class MixinCodeGenerator {
         }
 
 
-        // TODO: 其实let和return差不多？
-        if (type == Token.RETURN) {
-            Node rv = node.getFirstChild();
-            if (rv == null) {
-                int position = node.getIntProp(ExtendedConst.RETURN_LOCATION_PROP, -1);
-                int length = "return".length();
-                if (position > 0) {
-                    return;
-                }
+        if (type == Token.RETURN || type == Token.YIELD || type == Token.YIELD_STAR) {
+            int position = node.getIntProp(ExtendedConst.TOKEN_LOCATION_PROP, -1);
+            int length = type == Token.RETURN ? "return".length() : "yield".length();
+            if (position > 0) {
+                this.addStatementBreakpointMeta(position, length, true);
                 return;
             }
-
         }
 
-        if(node instanceof AstNode astNode) {
+        if (node instanceof AstNode astNode) {
             int position = astNode.getAbsolutePosition();
             int length = astNode.getLength();
 
             if (position > 0) {
-                // 可能的断点
+                this.addStatementBreakpointMeta(position, length, false);
                 return;
             }
         }
 
-        AstNode identifier = AstUtils.findFirstLiteralOrIdentifier(node);
-        if (identifier != null) {
-            int position = identifier.getAbsolutePosition();
-            int length = identifier.getLength();
+        Node locationalNode = AstUtils.findFirstLocationalNode(node);
+        if (locationalNode != null) {
+            int nodeType = locationalNode.getType();
+            if (nodeType == Token.ARRAYLIT) {
+                int position = node.getIntProp(ExtendedConst.RP_LOCATION_PROP, -1);
+                if (position > 0) {
+                    this.addStatementBreakpointMeta(position, 1, true);
+                    return;
+                }
 
-            if (position > 0) {
-                // 可能的断点
-                return;
+            } else if (nodeType == Token.OBJECTLIT) {
+                int position = node.getIntProp(ExtendedConst.RC_LOCATION_PROP, -1);
+                if (position > 0) {
+                    this.addStatementBreakpointMeta(position, 1, true);
+                    return;
+                }
+            } else if (locationalNode instanceof AstNode astNode) {
+                int position = astNode.getAbsolutePosition();
+                int length = astNode.getLength();
+
+                if (position > 0) {
+                    this.addStatementBreakpointMeta(position, length, false);
+                    return;
+                }
             }
         }
 
-
+        String typeStr = Token.typeToName(type);
         String nodeStr = AstUtils.printNode(node);
 
+
+        KubeJSDebugAdapter.log.warn("Could not find breakpoint location for {} \n {}", typeStr, nodeStr);
     }
 
     @Inject(method = "visitExpression", at = @At("HEAD"))
     private void inject_visitExpression(Node node, int contextFlags, CallbackInfo ci) {
+        if (!hasSourceFile) {
+            return;
+        }
 
         int type = node.getType();
 
         if (type == Token.CALL || type == Token.REF_CALL || type == Token.NEW) {
-            IDebuggableScriptProvider data = getData();
-            if (data == null) {
-                throw Kit.codeBug();
-            }
             Node child = node.getFirstChild();
             // Get Child's Name
 
             Name nameNode = AstUtils.findMethodName(child);
 
             if (nameNode != null && nameNode.getAbsolutePosition() > 0) {
-                System.out.println(nameNode.getAbsolutePosition());
+                this.addExpressionBreakpointMeta(nameNode.getAbsolutePosition(), nameNode.getLength());
+
             } else {
                 int rc = child.getIntProp(ExtendedConst.RC_LOCATION_PROP, -1);
-                System.out.println(rc);
+                if (rc > 0) {
+                    this.addExpressionBreakpointMeta(rc, 1);
+                }
             }
 
 

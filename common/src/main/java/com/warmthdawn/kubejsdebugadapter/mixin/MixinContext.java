@@ -46,8 +46,8 @@ public abstract class MixinContext implements IDebuggableContext {
     }
 
 
-    @Inject(method = "parse", at = @At("RETURN"), locals = LocalCapture.CAPTURE_FAILHARD)
-    private void inject_parse(String sourceString, String sourceName, int lineno, CompilerEnvirons compilerEnv, ErrorReporter compilationErrorReporter, boolean returnFunction, CallbackInfoReturnable<ScriptNode> cir, Parser p, AstRoot ast) {
+    @Inject(method = "parse", at = @At("RETURN"))
+    private void inject_parse(String sourceString, String sourceName, int lineno, CompilerEnvirons compilerEnv, ErrorReporter compilationErrorReporter, boolean returnFunction, CallbackInfoReturnable<ScriptNode> cir) {
 
     }
 
