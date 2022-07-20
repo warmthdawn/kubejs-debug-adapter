@@ -67,6 +67,11 @@ public class KubeStackFrame implements DebugFrame {
     }
 
     @Override
+    public void onPossibleBreakpoint(Context cx, int location) {
+
+    }
+
+    @Override
     public void onEnter(Context cx, Scriptable activation, Scriptable thisObj, Object[] args) {
         DebugContextData data = DebugContextData.get(cx);
         data.pushFrame(this);
@@ -88,7 +93,6 @@ public class KubeStackFrame implements DebugFrame {
         }
     }
 
-    @Override
     public void onLineChange(Context cx, int lineNumber) {
         this.currentLineNumber = lineNumber;
         DebuggerBridge bridge = runtime.getBridge();

@@ -12,9 +12,11 @@
     "MixinCodeGenerator",
     "MixinConsoleJS",
     "MixinContext",
+    "MixinIcode",
     "MixinInnerCallFrame",
     "MixinInnerContinuationJump",
     "MixinInterpreterData",
+    "MixinIRFactory",
     "MixinScriptManager"
   ],
   "injectors": {

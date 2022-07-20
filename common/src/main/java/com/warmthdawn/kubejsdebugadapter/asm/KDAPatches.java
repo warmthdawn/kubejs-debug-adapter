@@ -1,16 +1,15 @@
 package com.warmthdawn.kubejsdebugadapter.asm;
 
 import com.warmthdawn.kubejsdebugadapter.api.*;
-import com.warmthdawn.kubejsdebugadapter.utils.ExtendedIcode;
+import com.warmthdawn.kubejsdebugadapter.utils.ExtendedConst;
 import dev.latvian.mods.rhino.*;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import static dev.latvian.mods.rhino.UniqueTag.DOUBLE_MARK;
 
 public class KDAPatches {
     public static boolean processExtraOp(Context cx, int op, Object frameObj) {
         if (frameObj instanceof IDebuggableCallFrame frame) {
-            if (op == ExtendedIcode.Icode_BREAKPOINT) {
+            if (op == ExtendedConst.Icode_BREAKPOINT) {
                 if (frame.getDebuggerFrame() != null) {
                     int line = frame.readBreakpointLocation();
                     frame.getDebuggerFrame().onPossibleBreakpoint(cx, line);

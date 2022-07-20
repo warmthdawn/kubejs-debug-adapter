@@ -36,7 +36,8 @@ public class KubeVariable implements IVariableTreeNode {
             if (obj instanceof DebuggableScript && ((DebuggableScript) obj).isFunction()) {
                 if (((DebuggableScript) obj).getSourceName() != null) {
                     String source = PathUtil.getSourcePath(((DebuggableScript) obj).getSourceName()).toString();
-                    value = "@ " + source + ":" + ((DebuggableScript) obj).firstLineNumber();
+                    // TODO xxx
+//                    value = "@ " + source + ":" + ((DebuggableScript) obj).firstLineNumber();
                 }
             }
             if (value == null) {

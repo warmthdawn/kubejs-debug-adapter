@@ -2,11 +2,11 @@ package com.warmthdawn.kubejsdebugadapter.mixin;
 
 import com.warmthdawn.kubejsdebugadapter.api.DebuggableScript;
 import com.warmthdawn.kubejsdebugadapter.api.IDebuggableScriptProvider;
+import com.warmthdawn.kubejsdebugadapter.data.ScriptBreakpointData;
+import com.warmthdawn.kubejsdebugadapter.data.ScriptDebuggerData;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Pseudo;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Coerce;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
@@ -29,6 +29,18 @@ public abstract class MixinInterpreterData implements IDebuggableScriptProvider 
     boolean topLevel;
     private DebuggableScript data;
 
+    private ScriptDebuggerData breakpointData;
+
+
+    @Override
+    public ScriptDebuggerData getDebuggerData() {
+        return breakpointData;
+    }
+
+    @Override
+    public void setDebuggerData(ScriptDebuggerData breakpointData) {
+        this.breakpointData = breakpointData;
+    }
 
     @Inject(method = "init", at = @At("RETURN"))
     private void inject_init(CallbackInfo ci) {
@@ -101,11 +113,6 @@ public abstract class MixinInterpreterData implements IDebuggableScriptProvider 
                 }
 
                 @Override
-                public int firstLineNumber() {
-                    return 0;
-                }
-
-                @Override
                 public int getFunctionCount() {
                     IDebuggableScriptProvider[] itsNestedFunctions = getNestedFunctions();
                     return itsNestedFunctions == null ? 0 : itsNestedFunctions.length;
@@ -124,6 +131,11 @@ public abstract class MixinInterpreterData implements IDebuggableScriptProvider 
                         return null;
                     }
                     return itsParent.getDebuggableScript();
+                }
+
+                @Override
+                public ScriptDebuggerData getDebuggerData() {
+                    return breakpointData;
                 }
             };
         } catch (NoSuchFieldException e) {

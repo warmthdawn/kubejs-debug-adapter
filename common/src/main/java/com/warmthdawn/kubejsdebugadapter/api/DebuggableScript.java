@@ -8,6 +8,9 @@
 
 package com.warmthdawn.kubejsdebugadapter.api;
 
+import com.warmthdawn.kubejsdebugadapter.data.ScriptBreakpointData;
+import com.warmthdawn.kubejsdebugadapter.data.ScriptDebuggerData;
+
 /**
  * This interface exposes debugging information from executable code (either functions or top-level
  * scripts).
@@ -56,11 +59,11 @@ public interface DebuggableScript {
      */
     String getSourceName();
 
-    int firstLineNumber();
-
     int getFunctionCount();
 
     DebuggableScript getFunction(int index);
 
     DebuggableScript getParent();
+
+    ScriptDebuggerData getDebuggerData();
 }
