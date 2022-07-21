@@ -27,8 +27,22 @@ function initializeCoreMod() {
                 var succeed = false;
 
                 var lastLabel = null;
+                var i = 0
+                for (; i < arrayLength; i++) {
+                    var find = method.instructions.get(i);
+                    if (find.getOpcode() === Opcodes.PUTFIELD &&
+                        find.owner === "dev/latvian/mods/rhino/Context" &&
+                        find.name === "lastInterpreterFrame") {
+                        break;
+                    }
+                }
+                i++;
+                if(i >= arrayLength) {
+                    print("KubeJS Debug Adapter Transforming: Could not find get lastInterpreterFrame");
+                    return method;
+                }
                 find:
-                    for (var i = 0; i < arrayLength; i++) {
+                    for (; i < arrayLength; i++) {
                         var beginInsn = method.instructions.get(i);
 
                         if (beginInsn.getType() === AbstractInsnNode.LABEL) {
@@ -191,14 +205,15 @@ function initializeCoreMod() {
                     var toInject = new InsnList();
                     toInject.add(new VarInsnNode(Opcodes.ALOAD, 0));
                     toInject.add(new VarInsnNode(Opcodes.ALOAD, 1));
-                    toInject.add(new VarInsnNode(Opcodes.ALOAD, 3));
+                    toInject.add(new VarInsnNode(Opcodes.ALOAD, 2));
+                    toInject.add(new VarInsnNode(Opcodes.ILOAD, 3));
 
                     // Lcom/warmthdawn/kubejsdebugadapter/asm/KDAPatches;enterFrame(Ljava/lang/Object;Ldev/latvian/mods/rhino/Context;Ljava/lang/Object;)V
-                    toInject.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "com/warmthdawn/kubejsdebugadapter/asm/KDAPatches", "enterFrame", "(Ldev/latvian/mods/rhino/Context;Ljava/lang/Object;[Ljava/lang/Object;Z)V"));
+                    toInject.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "com/warmthdawn/kubejsdebugadapter/asm/KDAPatches", "enterDebugFrame", "(Ldev/latvian/mods/rhino/Context;Ljava/lang/Object;[Ljava/lang/Object;Z)V"));
 
                     print("KubeJS Debug Adapter Transforming: Applying transformation to " + method.name);
 
-                    method.instructions.insert(insn, toInject);
+                    method.instructions.insertBefore(insn, toInject);
                     print("KubeJS Debug Adapter Transforming: Successfully transformed " + method.name);
                     succeed = true;
 
@@ -235,14 +250,14 @@ function initializeCoreMod() {
                     var toInject = new InsnList();
                     toInject.add(new VarInsnNode(Opcodes.ALOAD, 0));
                     toInject.add(new VarInsnNode(Opcodes.ALOAD, 1));
-                    toInject.add(new VarInsnNode(Opcodes.ALOAD, 3));
+                    toInject.add(new VarInsnNode(Opcodes.ALOAD, 2));
 
                     // Lcom/warmthdawn/kubejsdebugadapter/asm/KDAPatches;exitDebugFrame(Ldev/latvian/mods/rhino/Context;Ljava/lang/Object;Ljava/lang/Object;)V
                     toInject.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "com/warmthdawn/kubejsdebugadapter/asm/KDAPatches", "exitDebugFrame", "(Ldev/latvian/mods/rhino/Context;Ljava/lang/Object;Ljava/lang/Object;)V"));
 
                     print("KubeJS Debug Adapter Transforming: Applying transformation to " + method.name);
 
-                    method.instructions.insert(insn, toInject);
+                    method.instructions.insertBefore(insn, toInject);
                     print("KubeJS Debug Adapter Transforming: Successfully transformed " + method.name);
                     succeed = true;
 
@@ -307,7 +322,7 @@ function initializeCoreMod() {
                 type: "METHOD",
                 class: "dev.latvian.mods.rhino.Context",
                 methodName: "compileImpl",
-                methodDesc: "(Ldev/latvian/mods/rhino/Scriptable;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;ZLdev/latvian/mods/rhino/Evaluator;Ldev/latvian/mods/rhino/ErrorReporter;)Ljava/lang/Object"
+                methodDesc: "(Ldev/latvian/mods/rhino/Scriptable;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;ZLdev/latvian/mods/rhino/Evaluator;Ldev/latvian/mods/rhino/ErrorReporter;)Ljava/lang/Object;"
             },
             transformer: function (method) {
                 print("KubeJS Debug Adapter Transforming: Begin transform of " + method.name);
@@ -315,7 +330,7 @@ function initializeCoreMod() {
                 var arrayLength = method.instructions.size();
                 for (var i = 0; i < arrayLength; i++) {
                     var insn = method.instructions.get(i);
-                    if (insn.getOpcode() !== Opcodes.INVOKEINTERFACE && insn.name === "compile" && insn.owner === "dev/latvian/mods/rhino/Evaluator") {
+                    if (!(insn.getOpcode() === Opcodes.INVOKEINTERFACE && insn.name === "compile" && insn.owner === "dev/latvian/mods/rhino/Evaluator")) {
                         continue;
                     }
 

@@ -7,7 +7,6 @@ import com.warmthdawn.kubejsdebugadapter.data.ScriptLocation;
 import com.warmthdawn.kubejsdebugadapter.data.UserDefinedBreakpoint;
 import com.warmthdawn.kubejsdebugadapter.data.breakpoint.BreakpointMeta;
 import com.warmthdawn.kubejsdebugadapter.data.breakpoint.FunctionSourceData;
-import com.warmthdawn.kubejsdebugadapter.data.breakpoint.ScriptSourceData;
 import com.warmthdawn.kubejsdebugadapter.data.breakpoint.StatementBreakpointMeta;
 import com.warmthdawn.kubejsdebugadapter.utils.LocationParser;
 import dev.latvian.mods.rhino.*;
@@ -18,14 +17,15 @@ public class KubeStackFrame implements DebugFrame {
 
     private final String[] paramNames;
 
-    public KubeStackFrame(int id, DebugRuntime runtime, DebuggableScript function, ContextFactory factory, ScriptSourceData scriptSourceData) {
+    public KubeStackFrame(int id, DebugRuntime runtime, DebuggableScript function, ContextFactory factory, FunctionSourceData sourceData, LocationParser locationParser) {
         this.id = id;
         this.runtime = runtime;
         this.source = function.getSourceName();
         this.functionName = function.getFunctionName();
+        this.function = function;
         this.factory = factory;
-        this.sourceData = scriptSourceData.getFunction(function.getFunctionScriptId());
-        this.locationParser = scriptSourceData.getLocationParser();
+        this.sourceData = sourceData;
+        this.locationParser = locationParser;
         int paramCount = function.getParamCount();
         String[] paramNames = new String[paramCount];
         for (int i = 0; i < paramCount; i++) {
@@ -37,12 +37,13 @@ public class KubeStackFrame implements DebugFrame {
 
 
     private final int id;
-    private final FunctionSourceData sourceData;
-    private final LocationParser locationParser;
+    private FunctionSourceData sourceData;
+    private LocationParser locationParser;
     private final ContextFactory factory;
     private final String functionName;
     private final String source;
     private final DebugRuntime runtime;
+    private final DebuggableScript function;
 
     private Scriptable thisObj;
     private Object[] args;
@@ -114,6 +115,8 @@ public class KubeStackFrame implements DebugFrame {
 
     @Override
     public void onEnter(Context cx, Scriptable activation, Scriptable thisObj, Object[] args) {
+
+
         DebugContextData data = DebugContextData.get(cx);
         data.pushFrame(this);
 

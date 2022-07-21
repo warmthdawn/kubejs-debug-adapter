@@ -2,6 +2,7 @@ package com.warmthdawn.kubejsdebugadapter.data.breakpoint;
 
 import com.warmthdawn.kubejsdebugadapter.utils.LocationParser;
 import dev.latvian.mods.rhino.ast.FunctionNode;
+import dev.latvian.mods.rhino.ast.ScriptNode;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -20,9 +21,9 @@ public class ScriptSourceData {
         this.parser = LocationParser.resolve(sourceId, sourceString);
     }
 
-    public FunctionSourceData addFunction(FunctionNode functionNode) {
+    public FunctionSourceData addFunction(ScriptNode scriptNode) {
         int id = functions.size();
-        FunctionSourceData functionSourceData = new FunctionSourceData(functionNode, id);
+        FunctionSourceData functionSourceData = new FunctionSourceData(scriptNode, id);
         functions.add(functionSourceData);
         return functionSourceData;
     }

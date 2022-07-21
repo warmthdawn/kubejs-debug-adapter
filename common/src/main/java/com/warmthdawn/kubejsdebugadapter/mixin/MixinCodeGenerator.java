@@ -58,6 +58,7 @@ public abstract class MixinCodeGenerator {
         if (length < 0) {
             length = 0;
         }
+
         BreakpointMeta breakpointMeta = functionSourceData.addStatementBreakpointMeta(position, length, mustBreak);
         statementMetaStack.pop();
         statementMetaStack.push(breakpointMeta.getId());
@@ -70,6 +71,7 @@ public abstract class MixinCodeGenerator {
         if (length < 0) {
             length = 0;
         }
+
         BreakpointMeta breakpointMeta = functionSourceData.addExpressionBreakpointMeta(position, length);
 
         Integer statementId = statementMetaStack.peek();
@@ -87,22 +89,21 @@ public abstract class MixinCodeGenerator {
     private boolean hasSourceFile = false;
 
 
-    @Inject(method = "generateFunctionICode", at = @At("HEAD"))
-    private void inject_generateFunctionICode(CallbackInfo ci) {
+    @Inject(method = "generateICodeFromTree", at = @At("HEAD"))
+    private void inject_generateICodeFromTree(CallbackInfo ci) {
 
         String sourceName = this.scriptOrFn.getSourceName();
         if (sourceName == null) {
             return;
         }
-        hasSourceFile = true;
+        hasSourceFile = !sourceName.contains("none");
 
         if (this.functionSourceData != null) {
-            throw Kit.codeBug("Called generateFunctionICode twice");
+            throw Kit.codeBug("Called generateICodeFromTree twice");
         }
         ScriptSourceData sourceData = DebugRuntime.getInstance().getSourceManager().getSourceData(this.scriptOrFn.getSourceName());
 
-        FunctionNode theFunction = (FunctionNode) scriptOrFn;
-        this.functionSourceData = sourceData.addFunction(theFunction);
+        this.functionSourceData = sourceData.addFunction(scriptOrFn);
         getData().setFunctionScriptId(functionSourceData.getId());
 
     }
@@ -199,31 +200,30 @@ public abstract class MixinCodeGenerator {
         KubeJSDebugAdapter.log.warn("Could not find breakpoint location for {} \n {}", typeStr, nodeStr);
     }
 
-    @Inject(method = "visitExpression", at = @At("HEAD"))
-    private void inject_visitExpression(Node node, int contextFlags, CallbackInfo ci) {
+
+    @Inject(method = "visitExpression", at = @At(value = "INVOKE",
+    target = "Ldev/latvian/mods/rhino/Node;getIntProp(II)I"), allow = 1)
+    private void inject_visitExpression_CallExp(Node node, int contextFlags, CallbackInfo ci) {
         if (!hasSourceFile) {
             return;
         }
-
         int type = node.getType();
+        if (type != Token.CALL && type != Token.REF_CALL && type != Token.NEW) {
+            throw Kit.codeBug();
+        }
+        Node child = node.getFirstChild();
+        // Get Child's Name
 
-        if (type == Token.CALL || type == Token.REF_CALL || type == Token.NEW) {
-            Node child = node.getFirstChild();
-            // Get Child's Name
+        Name nameNode = AstUtils.findMethodName(child);
 
-            Name nameNode = AstUtils.findMethodName(child);
+        if (nameNode != null && nameNode.getAbsolutePosition() > 0) {
+            this.addExpressionBreakpointMeta(nameNode.getAbsolutePosition(), nameNode.getLength());
 
-            if (nameNode != null && nameNode.getAbsolutePosition() > 0) {
-                this.addExpressionBreakpointMeta(nameNode.getAbsolutePosition(), nameNode.getLength());
-
-            } else {
-                int rc = child.getIntProp(ExtendedConst.RC_LOCATION_PROP, -1);
-                if (rc > 0) {
-                    this.addExpressionBreakpointMeta(rc, 1);
-                }
+        } else {
+            int rc = child.getIntProp(ExtendedConst.RC_LOCATION_PROP, -1);
+            if (rc > 0) {
+                this.addExpressionBreakpointMeta(rc, 1);
             }
-
-
         }
     }
 }

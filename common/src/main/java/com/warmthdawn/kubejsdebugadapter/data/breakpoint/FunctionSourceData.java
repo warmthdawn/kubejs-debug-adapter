@@ -2,6 +2,7 @@ package com.warmthdawn.kubejsdebugadapter.data.breakpoint;
 
 
 import dev.latvian.mods.rhino.ast.FunctionNode;
+import dev.latvian.mods.rhino.ast.ScriptNode;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -13,10 +14,14 @@ public class FunctionSourceData {
     private final int length;
 
 
-    public FunctionSourceData(FunctionNode functionNode, int id) {
-        position = functionNode.getAbsolutePosition();
-        length = functionNode.getLength();
-        name = functionNode.getName();
+    public FunctionSourceData(ScriptNode scriptNode, int id) {
+        position = scriptNode.getAbsolutePosition();
+        length = scriptNode.getLength();
+        if (scriptNode instanceof FunctionNode functionNode) {
+            name = functionNode.getName();
+        } else {
+            name = scriptNode.getSourceName();
+        }
         this.id = id;
     }
 

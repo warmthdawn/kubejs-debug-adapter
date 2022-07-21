@@ -27,7 +27,7 @@ public abstract class MixinInterpreterData implements IDebuggableScriptProvider 
     boolean topLevel;
     private DebuggableScript data;
 
-    private int functionScriptId;
+    private int functionScriptId = -1;
 
 
     @Override

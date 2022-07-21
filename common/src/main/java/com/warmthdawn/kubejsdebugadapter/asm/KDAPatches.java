@@ -59,7 +59,7 @@ public class KDAPatches {
         }
     }
 
-    private static void enterDebugFrame(Context cx, Object frameObj, Object[] args, boolean continuationRestart) {
+    public static void enterDebugFrame(Context cx, Object frameObj, Object[] args, boolean continuationRestart) {
         if (frameObj instanceof IDebuggableCallFrame frame && frame.getDebuggerFrame() != null) {
 
             Scriptable scope = frame.getScope();
@@ -97,7 +97,7 @@ public class KDAPatches {
         }
     }
 
-    private static void exitDebugFrame(Context cx, Object frameObj, Object throwable) {
+    public static void exitDebugFrame(Context cx, Object frameObj, Object throwable) {
 
         if (frameObj instanceof IDebuggableCallFrame frame && frame.getDebuggerFrame() != null) {
             try {
