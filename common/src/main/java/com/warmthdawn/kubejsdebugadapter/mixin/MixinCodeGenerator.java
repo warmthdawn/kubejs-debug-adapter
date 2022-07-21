@@ -34,6 +34,7 @@ public abstract class MixinCodeGenerator {
 
     @Shadow
     protected abstract void addUint16(int value);
+
     private static Field itsDataField;
 
     private IDebuggableScriptProvider getData() {
@@ -50,6 +51,7 @@ public abstract class MixinCodeGenerator {
             return null;
         }
     }
+
     private FunctionSourceData functionSourceData;
 
     private void addStatementBreakpointMeta(int position, int length, boolean mustBreak) {
@@ -60,7 +62,7 @@ public abstract class MixinCodeGenerator {
         statementMetaStack.pop();
         statementMetaStack.push(breakpointMeta.getId());
         addIcode(ExtendedConst.Icode_STATEMENT_BREAK);
-        addUint16(breakpointMeta.getId());
+        addUint16(breakpointMeta.getId() & 0xFFFF);
 
     }
 
@@ -78,7 +80,7 @@ public abstract class MixinCodeGenerator {
             functionSourceData.getStatementBreakpointMeta(statementId).addChild(breakpointMeta);
         }
         addIcode(ExtendedConst.Icode_EXPRESSION_BREAK);
-        addUint16(breakpointMeta.getId());
+        addUint16(breakpointMeta.getId() & 0xFFFF);
 
     }
 

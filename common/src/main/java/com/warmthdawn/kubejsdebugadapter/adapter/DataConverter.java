@@ -67,7 +67,9 @@ public class DataConverter {
         UserDefinedBreakpoint result = new UserDefinedBreakpoint();
 
         result.setLine(toKubeLineNumber(breakpoint.getLine()));
-        result.setColumn(toKubeLineNumber(breakpoint.getColumn()));
+        if (breakpoint.getColumn() != null) {
+            result.setColumn(toKubeLineNumber(breakpoint.getColumn()));
+        }
         return result;
     }
 
@@ -110,7 +112,7 @@ public class DataConverter {
             result.setValue(((KubeVariable) variable).getValue());
             result.setType(((KubeVariable) variable).getType());
         }
-        if(variable instanceof ErrorVariable) {
+        if (variable instanceof ErrorVariable) {
             result.setValue(((ErrorVariable) variable).getValue());
         }
 

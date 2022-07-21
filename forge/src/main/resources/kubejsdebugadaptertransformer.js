@@ -6,6 +6,7 @@ var AbstractInsnNode = Java.type('org.objectweb.asm.tree.AbstractInsnNode')
 var InsnList = Java.type('org.objectweb.asm.tree.InsnList')
 var JumpInsnNode = Java.type('org.objectweb.asm.tree.JumpInsnNode')
 var LabelNode = Java.type('org.objectweb.asm.tree.LabelNode')
+var FieldInsnNode = Java.type('org.objectweb.asm.tree.FieldInsnNode')
 
 
 function initializeCoreMod() {
@@ -52,9 +53,9 @@ function initializeCoreMod() {
                         var injectPosition = null;
 
 
-                        print("KubeJS Debug Adapter Transforming: Finding iCode[frame.pc++]...")
                         // 找到 int op = iCode[frame.pc++];
                         // 确保四条关键指令存在基本上久差不多了： 读icode, 读frame.pc，frame.pc，写 op
+                        print("KubeJS Debug Adapter Transforming: Finding iCode[frame.pc++]...")
                         var iCodePos = -1;
                         var hasGetFrame = false;
                         var hasGetPC = false;
@@ -138,7 +139,7 @@ function initializeCoreMod() {
                          * ILOAD $opPos
                          * ALOAD 1
                          * ALOAD $iCodePos
-                         * INVOKESTATIC Lcom/warmthdawn/kubejsdebugadapter/asm/KDAPatches;processExtraOp(Ldev/latvian/mods/rhino/Context;ILjava/lang/Object;)Z
+                         * INVOKESTATIC Lcom/warmthdawn/kubejsdebugadapter/asm/KDAPatches;processExtraOp(Ldev/latvian/mods/rhino/Context;ILjava/lang/Object;[B)Z
                          *
                          * IFNE $loopLabel
                          *
@@ -148,7 +149,7 @@ function initializeCoreMod() {
                         toInject.add(new VarInsnNode(Opcodes.ILOAD, opPos));
                         toInject.add(new VarInsnNode(Opcodes.ALOAD, 1));
                         toInject.add(new VarInsnNode(Opcodes.ALOAD, iCodePos));
-                        toInject.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "com/warmthdawn/kubejsdebugadapter/asm/KDAPatches", "processExtraOp", "(Ldev/latvian/mods/rhino/Context;ILjava/lang/Object;)Z"));
+                        toInject.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "com/warmthdawn/kubejsdebugadapter/asm/KDAPatches", "processExtraOp", "(Ldev/latvian/mods/rhino/Context;ILjava/lang/Object;[B)Z"));
                         toInject.add(new JumpInsnNode(Opcodes.IFNE, new LabelNode(loopLabel)));
 
 
@@ -192,7 +193,7 @@ function initializeCoreMod() {
                     toInject.add(new VarInsnNode(Opcodes.ALOAD, 1));
                     toInject.add(new VarInsnNode(Opcodes.ALOAD, 3));
 
-                    // Lcom/warmthdawn/kubejsdebugadapter/asm/KDAPatches;initDebugFrame(Ljava/lang/Object;Ldev/latvian/mods/rhino/Context;Ljava/lang/Object;)V
+                    // Lcom/warmthdawn/kubejsdebugadapter/asm/KDAPatches;enterFrame(Ljava/lang/Object;Ldev/latvian/mods/rhino/Context;Ljava/lang/Object;)V
                     toInject.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "com/warmthdawn/kubejsdebugadapter/asm/KDAPatches", "enterFrame", "(Ldev/latvian/mods/rhino/Context;Ljava/lang/Object;[Ljava/lang/Object;Z)V"));
 
                     print("KubeJS Debug Adapter Transforming: Applying transformation to " + method.name);
@@ -270,6 +271,7 @@ function initializeCoreMod() {
                 for (var i = 0; i < arrayLength; i++) {
                     var insn = method.instructions.get(i);
                     if (insn.getOpcode() !== Opcodes.INVOKESPECIAL) {
+                        hasSuper = true
                         continue;
                     }
 
@@ -277,6 +279,7 @@ function initializeCoreMod() {
                     toInject.add(new VarInsnNode(Opcodes.ALOAD, 0));
                     toInject.add(new VarInsnNode(Opcodes.ALOAD, 1));
                     toInject.add(new VarInsnNode(Opcodes.ALOAD, 3));
+                    toInject.add(new FieldInsnNode(Opcodes.GETFIELD, "dev/latvian/mods/rhino/InterpretedFunction", "idata", "Ldev/latvian/mods/rhino/InterpreterData;"));
 
                     // Lcom/warmthdawn/kubejsdebugadapter/asm/KDAPatches;initDebugFrame(Ljava/lang/Object;Ldev/latvian/mods/rhino/Context;Ljava/lang/Object;)V
                     toInject.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "com/warmthdawn/kubejsdebugadapter/asm/KDAPatches", "initDebugFrame", "(Ljava/lang/Object;Ldev/latvian/mods/rhino/Context;Ljava/lang/Object;)V"));

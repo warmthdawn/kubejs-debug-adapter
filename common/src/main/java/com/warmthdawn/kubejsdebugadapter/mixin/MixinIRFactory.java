@@ -16,8 +16,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 @Mixin(value = IRFactory.class, remap = false)
 public abstract class MixinIRFactory extends Parser {
 
-    @Shadow
-    public abstract Node transform(AstNode node);
 
     @Inject(method = "transformFunctionCall", at = @At("RETURN"))
     private void inject_transformFunctionCall(FunctionCall node, CallbackInfoReturnable<Node> cir) {

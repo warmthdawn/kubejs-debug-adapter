@@ -22,14 +22,17 @@ public class SourceManager {
         return loaded != null && loaded;
     }
 
+    public boolean hasCompiledSource(String sourceId) {
+        return compiledSources.containsKey(sourceId);
+    }
 
 
     public void setSourceLoaded(String sourceId, boolean loaded) {
         loadedSources.put(sourceId, loaded);
     }
 
-    public void addSource(String sourceId) {
-        compiledSources.put(sourceId, new ScriptSourceData(sourceId));
+    public void addSource(String sourceId, String sourceString) {
+        compiledSources.put(sourceId, new ScriptSourceData(sourceId, sourceString));
     }
 
 

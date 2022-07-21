@@ -96,6 +96,7 @@ public class DebugRuntime {
 
     public void setBridge(DebuggerBridge bridge) {
         this.bridge = bridge;
+        bridge.getBreakpointManager().setSourceManager(sourceManager);
     }
 
     public void removeBridge() {

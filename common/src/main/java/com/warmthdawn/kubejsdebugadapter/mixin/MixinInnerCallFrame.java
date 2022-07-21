@@ -30,11 +30,11 @@ public abstract class MixinInnerCallFrame implements IDebuggableCallFrame {
     @Shadow
     Scriptable scope;
     @Shadow
-    private Object result;
+    Object result;
     @Shadow
-    private double resultDbl;
+    double resultDbl;
     @Shadow
-    private int pc;
+    int pc;
     private DebugFrame debuggerFrame = null;
     private static Field parentFrameField;
 

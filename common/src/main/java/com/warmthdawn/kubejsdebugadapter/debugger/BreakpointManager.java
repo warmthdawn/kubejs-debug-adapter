@@ -3,6 +3,7 @@ package com.warmthdawn.kubejsdebugadapter.debugger;
 import com.warmthdawn.kubejsdebugadapter.adapter.DataConverter;
 import com.warmthdawn.kubejsdebugadapter.data.UserDefinedBreakpoint;
 import com.warmthdawn.kubejsdebugadapter.utils.PathUtil;
+import dev.latvian.mods.rhino.Context;
 import org.eclipse.lsp4j.debug.Breakpoint;
 import org.eclipse.lsp4j.debug.SetBreakpointsArguments;
 import org.eclipse.lsp4j.debug.SourceBreakpoint;
@@ -17,6 +18,7 @@ public class BreakpointManager {
     private final Map<Integer, UserDefinedBreakpoint> breakpointIdMap = new ConcurrentHashMap<>();
     private final ReentrantLock lock = new ReentrantLock();
     private int currentId;
+    private SourceManager sourceManager;
 
     private int nextId() {
         lock.lock();
@@ -29,6 +31,9 @@ public class BreakpointManager {
 
 
     public void setBreakpoint(String sourceId, List<UserDefinedBreakpoint> breakpoints) {
+        if(!sourceManager.hasCompiledSource(sourceId)) {
+            // TODO: LOAD
+        }
         this.breakpoints.put(sourceId, breakpoints);
     }
 
@@ -73,4 +78,7 @@ public class BreakpointManager {
 
     }
 
+    public void setSourceManager(SourceManager sourceManager) {
+        this.sourceManager = sourceManager;
+    }
 }

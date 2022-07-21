@@ -1,17 +1,20 @@
 package com.warmthdawn.kubejsdebugadapter.mixin;
 
-import org.spongepowered.asm.mixin.Final;
-import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Mutable;
-import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.*;
 import org.spongepowered.asm.mixin.gen.Accessor;
 import org.spongepowered.asm.mixin.injection.ModifyVariable;
 
-@Mixin(targets = "dev.latvian.mods.rhino.Icode")
+@Mixin(targets = "dev.latvian.mods.rhino.Icode", remap = false)
 public class MixinIcode {
 
-    @Shadow
-    @Final
-    @Mutable
-    static int MIN_ICODE = -69;
+    private static int MY_MIN_ICODE = -69;
+
+    /**
+     * @author WarmthDawn
+     * @reason add_MIN_ICODE
+     */
+    @Overwrite
+    static boolean validIcode(int icode) {
+        return MY_MIN_ICODE <= icode && icode <= 0;
+    }
 }

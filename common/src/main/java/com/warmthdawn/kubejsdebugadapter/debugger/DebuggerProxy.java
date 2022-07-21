@@ -33,9 +33,6 @@ public class DebuggerProxy implements Debugger {
 
 
         DebuggerBridge bridge = runtime.getBridge();
-        if (sourceName != null) {
-            runtime.getSourceManager().setSourceLoaded(sourceName, true);
-        }
         if (sourceName != null && bridge != null) {
             bridge.notifySource(sourceName);
         }
@@ -48,7 +45,7 @@ public class DebuggerProxy implements Debugger {
 
         String sourceName = fnOrScript.getSourceName();
         ScriptSourceData scriptSourceData = runtime.getSourceManager().getSourceData(sourceName);
-        if (scriptSourceData != null && runtime.getSourceManager().isSourceLoaded(sourceName)) {
+        if (scriptSourceData != null) {
             return new KubeStackFrame(
                 runtime.nextFrameId(),
                 runtime,

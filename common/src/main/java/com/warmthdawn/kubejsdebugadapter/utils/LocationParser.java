@@ -9,9 +9,9 @@ import java.util.Arrays;
 import java.util.Objects;
 
 public class LocationParser {
-    private int[] lineStartIndexes;
+    private final int[] lineStartIndexes;
 
-    private String sourceName;
+    private final String sourceName;
 
     public LocationParser(int[] lineStartIndexes, String sourceName) {
         this.lineStartIndexes = lineStartIndexes;
@@ -63,6 +63,11 @@ public class LocationParser {
         }
         int lineIndex = location.getLineNumber();
         int columnIndex = location.getColumnNumber();
+
+        return lineStartIndexes[lineIndex] + columnIndex;
+    }
+
+    public int toIndex(int lineIndex, int columnIndex) {
 
         return lineStartIndexes[lineIndex] + columnIndex;
     }

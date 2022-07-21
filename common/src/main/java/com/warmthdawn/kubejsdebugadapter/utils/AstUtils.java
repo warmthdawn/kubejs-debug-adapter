@@ -86,10 +86,11 @@ public class AstUtils {
         Node it = node;
 
         while (it != null) {
-            if (it instanceof AstNode && isLiteralOrIdentifier(it)) {
+            int type = it.getType();
+            if (it instanceof AstNode && (isLiteralOrIdentifier(it) || type == Token.GETVAR)) {
+
                 return it;
             }
-            int type = it.getType();
             if(type == Token.OBJECTLIT || type == Token.ARRAYLIT) {
                 return it;
             }

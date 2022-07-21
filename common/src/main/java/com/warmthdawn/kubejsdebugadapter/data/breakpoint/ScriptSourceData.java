@@ -9,12 +9,15 @@ import java.util.List;
 public class ScriptSourceData {
     private String id;
     private String sourceString;
+    private LocationParser parser;
 
 
     private final List<FunctionSourceData> functions = new ArrayList<>();
 
-    public ScriptSourceData(String sourceId) {
+    public ScriptSourceData(String sourceId, String sourceString) {
         this.id = sourceId;
+        this.sourceString = sourceString;
+        this.parser = LocationParser.resolve(sourceId, sourceString);
     }
 
     public FunctionSourceData addFunction(FunctionNode functionNode) {
@@ -30,6 +33,6 @@ public class ScriptSourceData {
     }
 
     public LocationParser getLocationParser() {
-        return null;
+        return parser;
     }
 }

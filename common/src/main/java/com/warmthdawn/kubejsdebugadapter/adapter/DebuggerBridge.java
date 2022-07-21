@@ -1,5 +1,6 @@
 package com.warmthdawn.kubejsdebugadapter.adapter;
 
+import com.warmthdawn.kubejsdebugadapter.data.ScriptLocation;
 import com.warmthdawn.kubejsdebugadapter.data.UserDefinedBreakpoint;
 import com.warmthdawn.kubejsdebugadapter.data.breakpoint.BreakpointMeta;
 import com.warmthdawn.kubejsdebugadapter.debugger.BreakpointManager;
@@ -23,10 +24,11 @@ public class DebuggerBridge {
     }
 
     public UserDefinedBreakpoint getBreakpointAt(String source, LocationParser parser, BreakpointMeta meta) {
+        ScriptLocation location = parser.toLocation(meta.getPosition());
         for (UserDefinedBreakpoint breakpoint : breakpointManager.getBreakpoints(source)) {
-//            if (breakpoint.getLine() == lineNumber) {
-//                return true;
-//            }
+            if(breakpoint.getLine() == location.getLineNumber() && breakpoint.getColumn() == location.getColumnNumber()) {
+                return breakpoint;
+            }
         }
 
         return null;
