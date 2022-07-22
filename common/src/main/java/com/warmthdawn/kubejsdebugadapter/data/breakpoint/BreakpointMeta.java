@@ -5,6 +5,9 @@ public class BreakpointMeta {
     private final int position;
     private final int length;
 
+    private boolean lowPriority;
+
+
     public BreakpointMeta(int id, int position, int length) {
         this.id = id;
         this.position = position;
@@ -23,5 +26,11 @@ public class BreakpointMeta {
         return length;
     }
 
+    public void setLowPriority(boolean lowPriority) {
+        this.lowPriority = lowPriority;
+    }
 
+    public boolean isLowPriority() {
+        return lowPriority;
+    }
 }

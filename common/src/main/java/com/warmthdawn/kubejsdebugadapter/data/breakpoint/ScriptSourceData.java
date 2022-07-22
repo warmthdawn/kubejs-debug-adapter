@@ -6,8 +6,10 @@ import com.warmthdawn.kubejsdebugadapter.utils.BreakpointUtils;
 import com.warmthdawn.kubejsdebugadapter.utils.LocationParser;
 import dev.latvian.mods.rhino.Kit;
 import dev.latvian.mods.rhino.ast.ScriptNode;
+import it.unimi.dsi.fastutil.ints.IntIntPair;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class ScriptSourceData {
@@ -69,26 +71,11 @@ public class ScriptSourceData {
 
     public List<Pair<ScriptLocation, ScriptLocation>> getLocationList(int lineStart, int lineEnd, int columnStart, int columnEnd) {
 
-        int startIndex = -1;
-        int endIndex = locationList.size();
-        int i = 0;
-        for (; i < locationList.size(); i++) {
-            ScriptLocation loc = locationList.get(i).first;
-            if (loc.getLineNumber() > lineStart || (loc.getLineNumber() == lineStart && loc.getColumnNumber() >= columnStart)) {
-                startIndex = i;
-                break;
-            }
+        IntIntPair range = BreakpointUtils.binarySearchLocationsBetween(locationList.size(), it -> locationList.get(it).first, lineStart, lineEnd, columnStart, columnEnd);
 
+        if (!(range.firstInt() < range.secondInt())) {
+            return Collections.emptyList();
         }
-        for (; i < locationList.size(); i++) {
-            ScriptLocation loc = locationList.get(i).first;
-            if (loc.getLineNumber() > lineEnd || (loc.getLineNumber() == lineEnd && (columnEnd >= 0 && loc.getColumnNumber() > columnEnd))) {
-                endIndex = i;
-                break;
-            }
-        }
-
-        return locationList.subList(startIndex, endIndex);
-
+        return locationList.subList(range.firstInt(), range.secondInt());
     }
 }

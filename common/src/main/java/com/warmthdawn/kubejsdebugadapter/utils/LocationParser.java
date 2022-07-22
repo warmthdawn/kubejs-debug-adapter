@@ -20,6 +20,7 @@ public class LocationParser {
 
     public static LocationParser resolve(String sourceName, String sourceString) {
         IntList lineStartIndexes = new IntArrayList();
+        lineStartIndexes.add(0);
         for(int i = 0; i < sourceString.length() - 1; i++) {
             char ch = sourceString.charAt(i);
 

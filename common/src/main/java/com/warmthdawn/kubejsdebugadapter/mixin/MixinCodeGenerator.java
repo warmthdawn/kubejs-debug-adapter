@@ -11,7 +11,6 @@ import com.warmthdawn.kubejsdebugadapter.utils.AstUtils;
 import com.warmthdawn.kubejsdebugadapter.utils.ExtendedConst;
 import dev.latvian.mods.rhino.*;
 import dev.latvian.mods.rhino.ast.*;
-import it.unimi.dsi.fastutil.ints.IntStack;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
@@ -21,7 +20,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.lang.reflect.Field;
 import java.util.ArrayDeque;
-import java.util.LinkedList;
 
 @Mixin(targets = "dev.latvian.mods.rhino.CodeGenerator", remap = false)
 public abstract class MixinCodeGenerator {
@@ -68,12 +66,12 @@ public abstract class MixinCodeGenerator {
 
     }
 
-    private void addExpressionBreakpointMeta(int position, int length) {
+    private void addExpressionBreakpointMeta(int position, int length, boolean lowPriority) {
         if (length < 0) {
             length = 0;
         }
 
-        BreakpointMeta breakpointMeta = functionSourceData.addExpressionBreakpointMeta(position, length);
+        BreakpointMeta breakpointMeta = functionSourceData.addExpressionBreakpointMeta(position, length, lowPriority);
 
         Integer statementId = statementMetaStack.peek();
         if (statementId == null) {
@@ -94,12 +92,13 @@ public abstract class MixinCodeGenerator {
     private void inject_compile(CompilerEnvirons compilerEnv, ScriptNode tree, boolean returnFunction, CallbackInfoReturnable<Object> cir) {
 
         String sourceName = this.scriptOrFn.getSourceName();
-        if(sourceName == null) {
+        if (sourceName == null) {
             return;
         }
         ScriptSourceData sourceData = DebugRuntime.getInstance().getSourceManager().getSourceData(sourceName);
         sourceData.finishCompile();
     }
+
     @Inject(method = "generateICodeFromTree", at = @At("HEAD"))
     private void inject_generateICodeFromTree(CallbackInfo ci) {
 
@@ -107,7 +106,7 @@ public abstract class MixinCodeGenerator {
         if (sourceName == null) {
             return;
         }
-        hasSourceFile = !sourceName.contains("none");
+        hasSourceFile = true;
 
         if (this.functionSourceData != null) {
             throw Kit.codeBug("Called generateICodeFromTree twice");
@@ -128,6 +127,26 @@ public abstract class MixinCodeGenerator {
         }
         statementMetaStack.pop();
     }
+
+    private static final AstUtils.NodeTypeTree destructuringTree = AstUtils.typeTree(Token.EXPR_VOID,
+        AstUtils.typeTree(Token.WITHEXPR,
+
+            AstUtils.typeTree(
+                Token.ENTERWITH,
+                AstUtils.typeTree(Token.OBJECTLIT)
+            ),
+
+
+            AstUtils.typeTree(
+                Token.WITH,
+                AstUtils.typeTree(Token.COMMA)
+            ),
+
+            AstUtils.typeTree(Token.LEAVEWITH)
+
+        )
+    );
+
 
     @Inject(method = "visitStatement", at = @At("HEAD"))
     private void inject_visitStatement_HEAD(Node node, int initialStackDepth, CallbackInfo ci) {
@@ -152,14 +171,45 @@ public abstract class MixinCodeGenerator {
                 return;
         }
 
+        {
+            int position = node.getIntProp(ExtendedConst.TOKEN_POSITION_PROP, -1);
+
+            if (position > 0) {
+                int length = node.getIntProp(ExtendedConst.TOKEN_LENGTH_PROP, 1);
+                this.addStatementBreakpointMeta(position, length, false);
+                return;
+            }
+        }
+
         // 肯定是生成的表达式，不去管他
         if (node.getFirstChild() == null && node.getLineno() < 0) {
             return;
         }
 
+        if (type == Token.EXPR_VOID) {
+            Node firstChild = node.getFirstChild();
+            if (firstChild != null) {
+                // let const 和 var
+                int firstChildType = firstChild.getType();
+                if (firstChildType == Token.SETNAME || firstChildType == Token.SETCONST) {
+                    if (firstChild.getFirstChild() != null) {
+                        if (findSimpleStatement(firstChild.getFirstChild().getNext())) return;
+                    }
+                }
+            }
+
+            // 解构赋值
+            if (AstUtils.hasTreeOf(node, destructuringTree.children)) {
+                Node target = node.getFirstChild().getFirstChild().getFirstChild().getFirstChild();
+                if (findSimpleStatement(target)) return;
+            }
+
+
+        }
+
 
         if (type == Token.RETURN || type == Token.YIELD || type == Token.YIELD_STAR) {
-            int position = node.getIntProp(ExtendedConst.TOKEN_LOCATION_PROP, -1);
+            int position = node.getIntProp(ExtendedConst.TOKEN_SPECIAL_POSITION_PROP, -1);
             int length = type == Token.RETURN ? "return".length() : "yield".length();
             if (position > 0) {
                 this.addStatementBreakpointMeta(position, length, true);
@@ -167,42 +217,8 @@ public abstract class MixinCodeGenerator {
             }
         }
 
-        if (node instanceof AstNode astNode) {
-            int position = astNode.getAbsolutePosition();
-            int length = astNode.getLength();
 
-            if (position > 0) {
-                this.addStatementBreakpointMeta(position, length, false);
-                return;
-            }
-        }
-
-        Node locationalNode = AstUtils.findFirstLocationalNode(node);
-        if (locationalNode != null) {
-            int nodeType = locationalNode.getType();
-            if (nodeType == Token.ARRAYLIT) {
-                int position = node.getIntProp(ExtendedConst.RP_LOCATION_PROP, -1);
-                if (position > 0) {
-                    this.addStatementBreakpointMeta(position, 1, true);
-                    return;
-                }
-
-            } else if (nodeType == Token.OBJECTLIT) {
-                int position = node.getIntProp(ExtendedConst.RC_LOCATION_PROP, -1);
-                if (position > 0) {
-                    this.addStatementBreakpointMeta(position, 1, true);
-                    return;
-                }
-            } else if (locationalNode instanceof AstNode astNode) {
-                int position = astNode.getAbsolutePosition();
-                int length = astNode.getLength();
-
-                if (position > 0) {
-                    this.addStatementBreakpointMeta(position, length, false);
-                    return;
-                }
-            }
-        }
+        if (findSimpleStatement(node)) return;
 
         String typeStr = Token.typeToName(type);
         String nodeStr = AstUtils.printNode(node);
@@ -211,9 +227,61 @@ public abstract class MixinCodeGenerator {
         KubeJSDebugAdapter.log.warn("Could not find breakpoint location for {} \n {}", typeStr, nodeStr);
     }
 
+    private boolean findSimpleStatement(Node node) {
+        Node locationalNode = AstUtils.findFirstLocationalNode(node);
+        if (locationalNode != null) {
+            int nodeType = locationalNode.getType();
+            if (nodeType == Token.ARRAYLIT) {
+                int position = node.getIntProp(ExtendedConst.TOKEN_SPECIAL_POSITION_PROP, -1);
+                if (position > 0) {
+                    this.addStatementBreakpointMeta(position, 1, true);
+                    return true;
+                }
+
+            } else if (nodeType == Token.OBJECTLIT) {
+                int position = node.getIntProp(ExtendedConst.TOKEN_SPECIAL_POSITION_PROP, -1);
+                if (position > 0) {
+                    this.addStatementBreakpointMeta(position, 1, true);
+                    return true;
+                }
+            } else {
+                int position = locationalNode.getIntProp(ExtendedConst.TOKEN_POSITION_PROP, -1);
+                int length = locationalNode.getIntProp(ExtendedConst.TOKEN_LENGTH_PROP, 1);
+
+                if (position > 0) {
+                    this.addStatementBreakpointMeta(position, length, false);
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+
+    @Inject(method = "visitExpression", at = @At(value = "HEAD"))
+    private void inject_visitExpression_HEAD(Node node, int contextFlags, CallbackInfo ci) {
+        if (!hasSourceFile) {
+            return;
+        }
+        int type = node.getType();
+        if (type == Token.SETCONST || type == Token.SETNAME) {
+            Node nameNode = node.getFirstChild();
+            if (nameNode == null) {
+                return;
+            }
+            int destructuring = nameNode.getIntProp(ExtendedConst.DESTRUCTURING_SET_FLAG_PROP, -1);
+            if (destructuring > 0) {
+                int position = nameNode.getIntProp(ExtendedConst.TOKEN_POSITION_PROP, -1);
+                if (position > 0) {
+                    int length = nameNode.getIntProp(ExtendedConst.TOKEN_LENGTH_PROP, 1);
+                    this.addExpressionBreakpointMeta(position, length, true);
+                }
+            }
+        }
+    }
 
     @Inject(method = "visitExpression", at = @At(value = "INVOKE",
-    target = "Ldev/latvian/mods/rhino/Node;getIntProp(II)I"), allow = 1)
+        target = "Ldev/latvian/mods/rhino/Node;getIntProp(II)I"), allow = 1)
     private void inject_visitExpression_CallExp(Node node, int contextFlags, CallbackInfo ci) {
         if (!hasSourceFile) {
             return;
@@ -227,13 +295,17 @@ public abstract class MixinCodeGenerator {
 
         Name nameNode = AstUtils.findMethodName(child);
 
-        if (nameNode != null && nameNode.getAbsolutePosition() > 0) {
-            this.addExpressionBreakpointMeta(nameNode.getAbsolutePosition(), nameNode.getLength());
+        if (nameNode != null) {
+            int position = nameNode.getIntProp(ExtendedConst.TOKEN_POSITION_PROP, -1);
+            int length = nameNode.getIntProp(ExtendedConst.TOKEN_LENGTH_PROP, 1);
+            if (position > 0) {
+                this.addExpressionBreakpointMeta(position, length, false);
+            }
 
         } else {
-            int rc = child.getIntProp(ExtendedConst.RC_LOCATION_PROP, -1);
+            int rc = node.getIntProp(ExtendedConst.TOKEN_SPECIAL_POSITION_PROP, -1);
             if (rc > 0) {
-                this.addExpressionBreakpointMeta(rc, 1);
+                this.addExpressionBreakpointMeta(rc, 1, false);
             }
         }
     }

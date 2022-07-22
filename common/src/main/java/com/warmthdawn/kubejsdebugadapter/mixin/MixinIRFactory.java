@@ -5,24 +5,53 @@ import com.warmthdawn.kubejsdebugadapter.utils.ExtendedConst;
 import dev.latvian.mods.rhino.IRFactory;
 import dev.latvian.mods.rhino.Node;
 import dev.latvian.mods.rhino.Parser;
+import dev.latvian.mods.rhino.Token;
 import dev.latvian.mods.rhino.ast.*;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
+import static com.warmthdawn.kubejsdebugadapter.utils.AstUtils.savePosition;
+
 @Mixin(value = IRFactory.class, remap = false)
 public abstract class MixinIRFactory extends Parser {
+
+
+    // 基本的
+
+
+    @Inject(method = "transform", at = @At("HEAD"))
+    private void inject_transform(AstNode node, CallbackInfoReturnable<Node> cir) {
+        switch (node.getType()) {
+            case Token.BREAK, Token.CONTINUE, Token.NAME, Token.TRUE, Token.FALSE, Token.THIS, Token.NULL, Token.NUMBER -> {
+                savePosition(node, node);
+            }
+        }
+    }
 
 
     @Inject(method = "transformFunctionCall", at = @At("RETURN"))
     private void inject_transformFunctionCall(FunctionCall node, CallbackInfoReturnable<Node> cir) {
         Node returnValue = cir.getReturnValue();
         // 把方法调用表达式左括号的位置记下来
-        returnValue.putIntProp(ExtendedConst.RC_LOCATION_PROP, node.getLp() + node.getAbsolutePosition());
+        returnValue.putIntProp(ExtendedConst.TOKEN_SPECIAL_POSITION_PROP, node.getLp() + node.getAbsolutePosition());
     }
+
+
+    // 方法
+    @Inject(method = "initFunction", at = @At("RETURN"))
+    private static void inject_initFunction(FunctionNode fnNode, int functionIndex, Node statements, int functionType, CallbackInfoReturnable<Node> cir) {
+        Name functionName = fnNode.getFunctionName();
+        // 匿名方法
+        if (functionName == null) {
+            return;
+        }
+        Node returnValue = cir.getReturnValue();
+        savePosition(returnValue, functionName);
+    }
+
 
     // 在转换表达式的时候，保存名字标签的位置
 
@@ -32,6 +61,7 @@ public abstract class MixinIRFactory extends Parser {
     private void inject_transformPropertyGet_HEAD(PropertyGet node, CallbackInfoReturnable<Node> cir) {
         _propertyNameNode.set(node.getProperty());
     }
+
 
     @Inject(method = "transformPropertyGet", at = @At("RETURN"))
     private void inject_transformPropertyGet_RETURN(PropertyGet node, CallbackInfoReturnable<Node> cir) {
@@ -43,7 +73,7 @@ public abstract class MixinIRFactory extends Parser {
     private Node inject_createPropertyGet_createName(IRFactory instance, String s) {
         // 保存名称
         Node node = createName(s);
-        copyPosition(node, _propertyNameNode.get());
+        savePosition(node, _propertyNameNode.get());
         return node;
     }
 
@@ -54,7 +84,7 @@ public abstract class MixinIRFactory extends Parser {
     private Node inject_createPropertyGet_newString(String str) {
         // 保存名称
         Node node = Node.newString(str);
-        copyPosition(node, _propertyNameNode.get());
+        savePosition(node, _propertyNameNode.get());
         return node;
     }
 
@@ -63,15 +93,15 @@ public abstract class MixinIRFactory extends Parser {
     private void inject_transformReturn(ReturnStatement node, CallbackInfoReturnable<Node> cir) {
         Node returnValue = cir.getReturnValue();
         // 标记一下return的位置。
-        returnValue.putIntProp(ExtendedConst.TOKEN_LOCATION_PROP, node.getAbsolutePosition());
+        returnValue.putIntProp(ExtendedConst.TOKEN_SPECIAL_POSITION_PROP, node.getAbsolutePosition());
     }
 
 
     @Inject(method = "transformYield", at = @At("RETURN"))
     private void inject_transformYield(Yield node, CallbackInfoReturnable<Node> cir) {
         Node returnValue = cir.getReturnValue();
-        // 标记一下return的位置。
-        returnValue.putIntProp(ExtendedConst.TOKEN_LOCATION_PROP, node.getAbsolutePosition());
+        // 标记一下yield的位置。
+        returnValue.putIntProp(ExtendedConst.TOKEN_SPECIAL_POSITION_PROP, node.getAbsolutePosition());
     }
 
 
@@ -79,40 +109,28 @@ public abstract class MixinIRFactory extends Parser {
     private void inject_transformObjectLiteral(ObjectLiteral node, CallbackInfoReturnable<Node> cir) {
         Node returnValue = cir.getReturnValue();
         // 标记一下ObjectLiteral大括号的位置
-        returnValue.putIntProp(ExtendedConst.RC_LOCATION_PROP, node.getAbsolutePosition());
+        returnValue.putIntProp(ExtendedConst.TOKEN_SPECIAL_POSITION_PROP, node.getAbsolutePosition());
     }
+
     @Inject(method = "transformArrayLiteral", at = @At("RETURN"))
     private void inject_transformArrayLiteral(ArrayLiteral node, CallbackInfoReturnable<Node> cir) {
         Node returnValue = cir.getReturnValue();
-        // 标记一下ObjectLiteral大括号的位置
-        returnValue.putIntProp(ExtendedConst.RP_LOCATION_PROP, node.getAbsolutePosition());
+        // 标记一下ArrayLiteral中括号的位置
+        returnValue.putIntProp(ExtendedConst.TOKEN_SPECIAL_POSITION_PROP, node.getAbsolutePosition());
     }
+
     @Inject(method = "transformString", at = @At("RETURN"))
     private void inject_transformString(StringLiteral node, CallbackInfoReturnable<Node> cir) {
         Node returnValue = cir.getReturnValue();
-        copyPosition(returnValue, node);
+        savePosition(returnValue, node);
     }
+
     @Inject(method = "transformTemplateLiteral", at = @At("RETURN"))
     private void inject_transformTemplateLiteral(TemplateLiteral node, CallbackInfoReturnable<Node> cir) {
         Node returnValue = cir.getReturnValue();
-        copyPosition(returnValue, node);
+        savePosition(returnValue, node);
     }
 
-    private static void copyPosition(Node node, AstNode old) {
-        if (old == null) {
-            return;
-        }
-        if (node instanceof AstNode astNode) {
-            astNode.setPosition(old.getAbsolutePosition());
-            astNode.setLength(old.getLength());
-            AstNode parent = astNode.getParent();
-            if (parent != null) {
-                astNode.setRelative(-parent.getAbsolutePosition());
-            }
-        } else {
-            KubeJSDebugAdapter.log.warn("Failed to copy position info: node {} is not instance of AstNode", node);
-        }
-    }
 
 
 }

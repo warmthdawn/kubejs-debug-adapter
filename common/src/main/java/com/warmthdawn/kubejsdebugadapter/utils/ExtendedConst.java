@@ -8,10 +8,12 @@ public class ExtendedConst {
 
 
 
+    public static final int TOKEN_POSITION_PROP = 30;
+    public static final int TOKEN_LENGTH_PROP = 31;
+    public static final int TOKEN_SPECIAL_POSITION_PROP = 32;
+    public static final int DESTRUCTURING_SET_FLAG_PROP = 33;
 
-    public static final int RC_LOCATION_PROP = 30;
-    public static final int RP_LOCATION_PROP = 31;
-    public static final int TOKEN_LOCATION_PROP = 32;
+
 
 
 }

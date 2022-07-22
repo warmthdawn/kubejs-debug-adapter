@@ -119,15 +119,17 @@ public class DebuggerBridge {
         breakpointManager.fixBreakpoints(sourceName, b -> {
             BreakpointEventArguments args = new BreakpointEventArguments();
             Breakpoint breakpoint = converter.toDAPBreakpoint(dapSource, result -> {
+                result.setVerified(true);
             }, b);
             args.setBreakpoint(breakpoint);
             args.setReason(BreakpointEventArgumentsReason.CHANGED);
             client.breakpoint(args);
         }, b -> {
             BreakpointEventArguments args = new BreakpointEventArguments();
-            Breakpoint breakpoint = new Breakpoint();
-            breakpoint.setSource(dapSource);
-            breakpoint.setId(b);
+            Breakpoint breakpoint = converter.toDAPBreakpoint(dapSource, result -> {
+                result.setVerified(false);
+                result.setMessage("Could not add breakpoint here");
+            }, b);
             args.setBreakpoint(breakpoint);
             args.setReason(BreakpointEventArgumentsReason.REMOVED);
             client.breakpoint(args);

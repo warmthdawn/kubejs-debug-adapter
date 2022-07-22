@@ -6,6 +6,7 @@ import dev.latvian.mods.rhino.ast.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.util.List;
 import java.util.function.Consumer;
 
 public class AstUtils {
@@ -66,7 +67,7 @@ public class AstUtils {
 
     public static boolean isLiteralOrIdentifier(Node node) {
         int type = node.getType();
-        return type == Token.STRING || type == Token.NUMBER || type == Token.NAME || type == Token.TRUE || type == Token.FALSE || type == Token.NULL;
+        return type == Token.STRING || type == Token.NUMBER || type == Token.NAME || type == Token.BINDNAME || type == Token.TRUE || type == Token.FALSE || type == Token.NULL;
     }
 
     public static String idToString(AstNode node) {
@@ -82,16 +83,69 @@ public class AstUtils {
         };
     }
 
+    public static class NodeTypeTree {
+        public final NodeTypeTree[] children;
+        public final int currentType;
+
+
+        public NodeTypeTree(int currentType, NodeTypeTree ...children) {
+            this.currentType = currentType;
+            this.children = children;
+        }
+    }
+
+    public static void savePosition(Node node, AstNode old) {
+        if (old == null) {
+            return;
+        }
+
+        node.putIntProp(ExtendedConst.TOKEN_POSITION_PROP, old.getAbsolutePosition());
+        node.putIntProp(ExtendedConst.TOKEN_LENGTH_PROP, old.getLength());
+    }
+    public static NodeTypeTree typeTree(int type, NodeTypeTree ...children) {
+        return new NodeTypeTree(type, children);
+    }
+
+
+    public static boolean hasTreeOf(Node node, NodeTypeTree[] tree) {
+        Node last = node.getLastChild();
+        Node it = node.getFirstChild();
+        int i = 0;
+        while (it != null) {
+            if (i >= tree.length) {
+                return false;
+            }
+            NodeTypeTree n = tree[i];
+            if (n.currentType >= 0 && n.currentType != it.getType()) {
+                return false;
+            }
+            if(n.children.length > 0) {
+                boolean match = hasTreeOf(it, n.children);
+                if (!match) {
+                    return false;
+                }
+            }
+
+
+            if (it == last) {
+                i++;
+                break;
+            }
+            it = it.getNext();
+            i++;
+        }
+        return i == tree.length;
+    }
+
     public static Node findFirstLocationalNode(Node node) {
         Node it = node;
 
         while (it != null) {
             int type = it.getType();
-            if (it instanceof AstNode && (isLiteralOrIdentifier(it) || type == Token.GETVAR)) {
-
+            if ((isLiteralOrIdentifier(it) || type == Token.GETVAR)) {
                 return it;
             }
-            if(type == Token.OBJECTLIT || type == Token.ARRAYLIT) {
+            if (type == Token.OBJECTLIT || type == Token.ARRAYLIT) {
                 return it;
             }
 

@@ -1,7 +1,6 @@
 package com.warmthdawn.kubejsdebugadapter.data.breakpoint;
 
 
-import dev.latvian.mods.rhino.ast.AstNode;
 import dev.latvian.mods.rhino.ast.Block;
 import dev.latvian.mods.rhino.ast.FunctionNode;
 import dev.latvian.mods.rhino.ast.ScriptNode;
@@ -75,7 +74,7 @@ public class FunctionSourceData {
     private final List<StatementBreakpointMeta> statementBreakpointMetas = new ArrayList<>();
 
 
-    public BreakpointMeta addExpressionBreakpointMeta(int position, int length) {
+    public BreakpointMeta addExpressionBreakpointMeta(int position, int length, boolean lowPriority) {
         int id = expressionBreakpointMetas.size();
         BreakpointMeta meta = new BreakpointMeta(id, position, length);
         expressionBreakpointMetas.add(meta);

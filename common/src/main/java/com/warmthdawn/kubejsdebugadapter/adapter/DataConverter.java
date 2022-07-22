@@ -60,6 +60,7 @@ public class DataConverter {
         b.setLine(toDAPLineNumber(breakpoint.getLine()));
         b.setColumn(toDAPColumnNumber(breakpoint.getColumn()));
         b.setSource(source);
+        b.setId(breakpoint.getId());
         consumer.accept(b);
         return b;
     }

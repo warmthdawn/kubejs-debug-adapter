@@ -6,6 +6,9 @@ import com.warmthdawn.kubejsdebugadapter.data.breakpoint.ScriptSourceData;
 import com.warmthdawn.kubejsdebugadapter.utils.BreakpointUtils;
 import com.warmthdawn.kubejsdebugadapter.utils.PathUtil;
 import dev.latvian.mods.rhino.Context;
+import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
+import it.unimi.dsi.fastutil.ints.IntSet;
+import it.unimi.dsi.fastutil.ints.IntSets;
 import org.eclipse.lsp4j.debug.Breakpoint;
 import org.eclipse.lsp4j.debug.SetBreakpointsArguments;
 import org.eclipse.lsp4j.debug.SourceBreakpoint;
@@ -35,11 +38,26 @@ public class BreakpointManager {
     }
 
 
-    public void setBreakpoint(String sourceId, List<UserDefinedBreakpoint> breakpoints) {
-        if(!sourceManager.hasCompiledSource(sourceId)) {
-            // TODO: LOAD
+    public IntSet setBreakpoint(String sourceId, List<UserDefinedBreakpoint> breakpoints) {
+        if (sourceManager.isSourceLoaded(sourceId)) {
+            ScriptSourceData data = sourceManager.getSourceData(sourceId);
+            List<UserDefinedBreakpoint> toUpdate = new ArrayList<>();
+            IntSet toRemove = new IntOpenHashSet();
+            List<UserDefinedBreakpoint> validBreakpoints = BreakpointUtils.coerceBreakpoints(
+                data.getLocationList(),
+                breakpoints,
+                toUpdate,
+                toRemove
+            );
+            this.breakpoints.put(sourceId, validBreakpoints);
+            toRemove.forEach(breakpointIdMap::remove);
+            return toRemove;
+
+        } else {
+            this.breakpoints.put(sourceId, breakpoints);
+            return IntSets.emptySet();
         }
-        this.breakpoints.put(sourceId, breakpoints);
+
     }
 
     public List<UserDefinedBreakpoint> getBreakpoints(String sourceId) {
@@ -75,11 +93,22 @@ public class BreakpointManager {
             target.add(scriptBreakpoint);
         }
 
-        setBreakpoint(sourceId, target);
-
-        return converter.convertDAPBreakpoints(args.getSource(), target, b -> {
-            b.setVerified(true);
-        });
+        IntSet toRemove = setBreakpoint(sourceId, target);
+        if (sourceManager.isSourceLoaded(sourceId)) {
+            return converter.convertDAPBreakpoints(args.getSource(), target, b -> {
+                if (toRemove.contains(b.getId().intValue())) {
+                    b.setVerified(false);
+                    b.setMessage("Can not add breakpoint");
+                } else {
+                    b.setVerified(true);
+                }
+            });
+        } else {
+            return converter.convertDAPBreakpoints(args.getSource(), target, b -> {
+                b.setVerified(false);
+                b.setMessage("The script is not loaded yet");
+            });
+        }
 
     }
 
@@ -88,7 +117,7 @@ public class BreakpointManager {
     }
 
 
-    public void fixBreakpoints(String sourceId, Consumer<UserDefinedBreakpoint> updateAction, IntConsumer removeAction) {
+    public void fixBreakpoints(String sourceId, Consumer<UserDefinedBreakpoint> updateAction, Consumer<UserDefinedBreakpoint> removeAction) {
         ScriptSourceData data = sourceManager.getSourceData(sourceId);
         List<UserDefinedBreakpoint> breakpoints = this.breakpoints.get(sourceId);
         if (breakpoints == null) {
@@ -96,16 +125,21 @@ public class BreakpointManager {
         }
 
         List<UserDefinedBreakpoint> toUpdate = new ArrayList<>();
-        List<Integer> toRemove = new ArrayList<>();
-        BreakpointUtils.coerceBreakpoints(
+        IntSet toRemove = new IntOpenHashSet();
+        List<UserDefinedBreakpoint> validBreakpoints = BreakpointUtils.coerceBreakpoints(
             data.getLocationList(),
             breakpoints,
             toUpdate,
             toRemove
         );
 
+        this.breakpoints.put(sourceId, validBreakpoints);
+
 
         toUpdate.forEach(updateAction);
-        toRemove.forEach(removeAction::accept);
+        toRemove.forEach(it -> {
+            UserDefinedBreakpoint remove = breakpointIdMap.remove(it);
+            removeAction.accept(remove);
+        });
     }
 }
