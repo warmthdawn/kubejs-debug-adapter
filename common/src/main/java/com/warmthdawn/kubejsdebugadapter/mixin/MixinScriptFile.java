@@ -1,6 +1,7 @@
 package com.warmthdawn.kubejsdebugadapter.mixin;
 
 import com.warmthdawn.kubejsdebugadapter.debugger.DebugRuntime;
+import com.warmthdawn.kubejsdebugadapter.debugger.SourceManager;
 import dev.latvian.mods.kubejs.script.ScriptFile;
 import dev.latvian.mods.kubejs.script.ScriptFileInfo;
 import dev.latvian.mods.kubejs.script.ScriptSource;
@@ -29,6 +30,16 @@ public class MixinScriptFile {
         locals = LocalCapture.CAPTURE_FAILHARD,
         at = @At(value = "INVOKE", target = "Ldev/latvian/mods/rhino/Context;evaluateString(Ldev/latvian/mods/rhino/Scriptable;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Ljava/lang/Object;"))
     private void inject_load(CallbackInfoReturnable<Boolean> cir, InputStream stream, String script) {
-        DebugRuntime.getInstance().getSourceManager().addSource(this.info.location, script);
+        SourceManager sourceManager = DebugRuntime.getInstance().getSourceManager();
+        sourceManager.addSource(this.info.location, script);
+
+    }
+    @Inject(method = "load",
+        locals = LocalCapture.CAPTURE_FAILHARD,
+        at = @At(value = "INVOKE_ASSIGN", target = "Ldev/latvian/mods/rhino/Context;evaluateString(Ldev/latvian/mods/rhino/Scriptable;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Ljava/lang/Object;"))
+    private void inject_load(CallbackInfoReturnable<Boolean> cir) {
+        SourceManager sourceManager = DebugRuntime.getInstance().getSourceManager();
+        sourceManager.setSourceLoaded(this.info.location, true);
+
     }
 }

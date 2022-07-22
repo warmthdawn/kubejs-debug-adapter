@@ -4,6 +4,7 @@ public class UserDefinedBreakpoint {
 
     private int line;
     private int column;
+    private int id;
 
     public int getLine() {
         return line;
@@ -19,5 +20,13 @@ public class UserDefinedBreakpoint {
 
     public void setColumn(int column) {
         this.column = column;
+    }
+
+    public void setId(int id) {
+        this.id = id;
+    }
+
+    public int getId() {
+        return id;
     }
 }

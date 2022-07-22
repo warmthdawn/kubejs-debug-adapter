@@ -43,8 +43,10 @@ public class PathUtil {
     public static Source getDAPSource(String sourceId) {
         Path path = getSourcePath(sourceId);
         Source result = new Source();
-        result.setPath(path.toString());
-        result.setName(path.getFileName().toString());
+        if(path != null) {
+            result.setPath(path.toString());
+            result.setName(path.getFileName().toString());
+        }
         return result;
     }
 
@@ -56,7 +58,10 @@ public class PathUtil {
 
         String namespace = sourceId.substring(0, i);
         String path = sourceId.substring(i + 1);
-
-        return scriptPackPaths.get(namespace).resolve(path);
+        Path namespacePath = scriptPackPaths.get(namespace);
+        if (namespacePath == null) {
+            return null;
+        }
+        return namespacePath.resolve(path);
     }
 }

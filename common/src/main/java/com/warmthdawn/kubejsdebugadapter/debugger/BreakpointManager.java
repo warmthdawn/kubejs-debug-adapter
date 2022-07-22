@@ -2,6 +2,8 @@ package com.warmthdawn.kubejsdebugadapter.debugger;
 
 import com.warmthdawn.kubejsdebugadapter.adapter.DataConverter;
 import com.warmthdawn.kubejsdebugadapter.data.UserDefinedBreakpoint;
+import com.warmthdawn.kubejsdebugadapter.data.breakpoint.ScriptSourceData;
+import com.warmthdawn.kubejsdebugadapter.utils.BreakpointUtils;
 import com.warmthdawn.kubejsdebugadapter.utils.PathUtil;
 import dev.latvian.mods.rhino.Context;
 import org.eclipse.lsp4j.debug.Breakpoint;
@@ -11,6 +13,9 @@ import org.eclipse.lsp4j.debug.SourceBreakpoint;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
+import java.util.function.IntConsumer;
 import java.util.stream.Collectors;
 
 public class BreakpointManager {
@@ -80,5 +85,27 @@ public class BreakpointManager {
 
     public void setSourceManager(SourceManager sourceManager) {
         this.sourceManager = sourceManager;
+    }
+
+
+    public void fixBreakpoints(String sourceId, Consumer<UserDefinedBreakpoint> updateAction, IntConsumer removeAction) {
+        ScriptSourceData data = sourceManager.getSourceData(sourceId);
+        List<UserDefinedBreakpoint> breakpoints = this.breakpoints.get(sourceId);
+        if (breakpoints == null) {
+            return;
+        }
+
+        List<UserDefinedBreakpoint> toUpdate = new ArrayList<>();
+        List<Integer> toRemove = new ArrayList<>();
+        BreakpointUtils.coerceBreakpoints(
+            data.getLocationList(),
+            breakpoints,
+            toUpdate,
+            toRemove
+        );
+
+
+        toUpdate.forEach(updateAction);
+        toRemove.forEach(removeAction::accept);
     }
 }

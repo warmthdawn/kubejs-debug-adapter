@@ -36,7 +36,7 @@ public class DebuggerProxy implements Debugger {
 
         DebuggerBridge bridge = runtime.getBridge();
         if (sourceName != null && bridge != null) {
-            bridge.notifySource(sourceName);
+            bridge.notifySourceCompiled(sourceName);
         }
 
 

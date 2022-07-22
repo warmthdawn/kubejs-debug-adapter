@@ -17,6 +17,7 @@ import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.lang.reflect.Field;
 import java.util.ArrayDeque;
@@ -89,6 +90,16 @@ public abstract class MixinCodeGenerator {
     private boolean hasSourceFile = false;
 
 
+    @Inject(method = "compile", at = @At("RETURN"))
+    private void inject_compile(CompilerEnvirons compilerEnv, ScriptNode tree, boolean returnFunction, CallbackInfoReturnable<Object> cir) {
+
+        String sourceName = this.scriptOrFn.getSourceName();
+        if(sourceName == null) {
+            return;
+        }
+        ScriptSourceData sourceData = DebugRuntime.getInstance().getSourceManager().getSourceData(sourceName);
+        sourceData.finishCompile();
+    }
     @Inject(method = "generateICodeFromTree", at = @At("HEAD"))
     private void inject_generateICodeFromTree(CallbackInfo ci) {
 

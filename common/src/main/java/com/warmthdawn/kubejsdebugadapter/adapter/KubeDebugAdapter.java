@@ -1,12 +1,13 @@
 package com.warmthdawn.kubejsdebugadapter.adapter;
 
+import com.ibm.icu.impl.Pair;
+import com.warmthdawn.kubejsdebugadapter.data.ScriptLocation;
+import com.warmthdawn.kubejsdebugadapter.data.breakpoint.ScriptSourceData;
 import com.warmthdawn.kubejsdebugadapter.debugger.DebugRuntime;
 import com.warmthdawn.kubejsdebugadapter.debugger.DebugSession;
 import com.warmthdawn.kubejsdebugadapter.debugger.DebugThread;
 import com.warmthdawn.kubejsdebugadapter.debugger.KubeStackFrame;
-import com.warmthdawn.kubejsdebugadapter.utils.CompletionUtils;
-import com.warmthdawn.kubejsdebugadapter.utils.EvalUtils;
-import com.warmthdawn.kubejsdebugadapter.utils.VariableUtils;
+import com.warmthdawn.kubejsdebugadapter.utils.*;
 import com.warmthdawn.kubejsdebugadapter.data.variable.IVariableTreeNode;
 import com.warmthdawn.kubejsdebugadapter.data.variable.VariableScope;
 import dev.latvian.mods.rhino.ContextFactory;
@@ -28,14 +29,11 @@ public class KubeDebugAdapter implements IDebugProtocolServer {
 
 
     private final ExecutorService async;
-    private final ExecutorService stdout;
-    private final ExecutorService stderr;
-
+    private final ExecutorService compilerAsync;
 
     public KubeDebugAdapter() {
         async = Executors.newSingleThreadExecutor();
-        stdout = Executors.newSingleThreadExecutor();
-        stderr = Executors.newSingleThreadExecutor();
+        compilerAsync = Executors.newSingleThreadExecutor();
     }
 
     private DebuggerBridge bridge;
@@ -50,7 +48,11 @@ public class KubeDebugAdapter implements IDebugProtocolServer {
     @Override
     public CompletableFuture<Capabilities> initialize(InitializeRequestArguments args) {
 
-        converter = new DataConverter(args.getLinesStartAt1(), args.getColumnsStartAt1());
+        this.converter = new DataConverter(args.getLinesStartAt1(), args.getColumnsStartAt1());
+        this.bridge = new DebuggerBridge(this.client, converter);
+        this.runtime.setBridge(bridge);
+        this.bridge.sendOutput("Connected to debug adapter");
+        log.info("Connected to debug adapter");
 
 
         Capabilities capabilities = new Capabilities();
@@ -59,6 +61,7 @@ public class KubeDebugAdapter implements IDebugProtocolServer {
         capabilities.setSupportsCompletionsRequest(true);
         capabilities.setSupportsEvaluateForHovers(true);
         capabilities.setSupportsConfigurationDoneRequest(true);
+        capabilities.setSupportsBreakpointLocationsRequest(true);
         capabilities.setCompletionTriggerCharacters(new String[]{".", "[", "'", "\""});
 
 
@@ -86,11 +89,6 @@ public class KubeDebugAdapter implements IDebugProtocolServer {
 
 
         this.runtime = DebugRuntime.getInstance();
-        this.bridge = new DebuggerBridge(this.client);
-        this.runtime.setBridge(bridge);
-
-        log.info("Connected to debug adapter");
-        this.bridge.sendOutput("Connected to debug adapter");
 
     }
 
@@ -114,7 +112,29 @@ public class KubeDebugAdapter implements IDebugProtocolServer {
 
     @Override
     public CompletableFuture<BreakpointLocationsResponse> breakpointLocations(BreakpointLocationsArguments args) {
-        return IDebugProtocolServer.super.breakpointLocations(args);
+        return CompletableFuture.supplyAsync(() -> {
+            Source source = args.getSource();
+            String sourceId = PathUtil.getSourceId(source);
+            ScriptSourceData sourceData = runtime.getSourceManager().getSourceData(sourceId);
+            if(sourceData == null) {
+                sourceData = runtime.getSourceManager().compileSource(sourceId);
+            }
+            if(!sourceData.isFinished()) {
+                Utils.waitFor(sourceData::isFinished);
+            }
+            int startLine = converter.toKubeLineNumber(args.getLine());
+            int endLine = args.getEndLine() == null ? startLine : converter.toKubeLineNumber(args.getEndLine());
+            int startColumn = args.getColumn() == null ? 0 : converter.toKubeColumnNumber(args.getColumn());
+            int endColumn = args.getEndColumn() == null ? -1 : converter.toKubeColumnNumber(args.getEndColumn());
+            List<Pair<ScriptLocation, ScriptLocation>> locationList = sourceData.getLocationList(startLine, endLine, startColumn, endColumn);
+
+            BreakpointLocation[] breakpointLocations = converter.toDAPBreakpointLocations(locationList);
+
+            BreakpointLocationsResponse resp = new BreakpointLocationsResponse();
+            resp.setBreakpoints(breakpointLocations);
+            return resp;
+
+        }, compilerAsync);
     }
 
     @Override
@@ -286,7 +306,7 @@ public class KubeDebugAdapter implements IDebugProtocolServer {
                 response.setVariablesReference(variable.getId());
             }
             return response;
-        }, async);
+        }, compilerAsync);
     }
 
     @Override
@@ -303,7 +323,7 @@ public class KubeDebugAdapter implements IDebugProtocolServer {
             response.setTargets(complete.toArray(new CompletionItem[0]));
 
             return response;
-        }, async);
+        }, compilerAsync);
     }
 
 

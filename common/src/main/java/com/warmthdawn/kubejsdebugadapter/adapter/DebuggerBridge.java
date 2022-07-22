@@ -5,6 +5,7 @@ import com.warmthdawn.kubejsdebugadapter.data.UserDefinedBreakpoint;
 import com.warmthdawn.kubejsdebugadapter.data.breakpoint.BreakpointMeta;
 import com.warmthdawn.kubejsdebugadapter.debugger.BreakpointManager;
 import com.warmthdawn.kubejsdebugadapter.utils.LocationParser;
+import com.warmthdawn.kubejsdebugadapter.utils.PathUtil;
 import org.eclipse.lsp4j.debug.*;
 import org.eclipse.lsp4j.debug.services.IDebugProtocolClient;
 
@@ -12,9 +13,11 @@ import java.util.Calendar;
 
 public class DebuggerBridge {
     private final IDebugProtocolClient client;
+    private final DataConverter converter;
 
-    public DebuggerBridge(IDebugProtocolClient client) {
+    public DebuggerBridge(IDebugProtocolClient client, DataConverter converter) {
         this.client = client;
+        this.converter = converter;
     }
 
     private final BreakpointManager breakpointManager = new BreakpointManager();
@@ -26,7 +29,7 @@ public class DebuggerBridge {
     public UserDefinedBreakpoint getBreakpointAt(String source, LocationParser parser, BreakpointMeta meta) {
         ScriptLocation location = parser.toLocation(meta.getPosition());
         for (UserDefinedBreakpoint breakpoint : breakpointManager.getBreakpoints(source)) {
-            if(breakpoint.getLine() == location.getLineNumber() && breakpoint.getColumn() == location.getColumnNumber()) {
+            if (breakpoint.getLine() == location.getLineNumber() && breakpoint.getColumn() == location.getColumnNumber()) {
                 return breakpoint;
             }
         }
@@ -109,6 +112,28 @@ public class DebuggerBridge {
     public void notifySource(String sourceName) {
 
     }
+
+
+    public void notifySourceCompiled(String sourceName) {
+        Source dapSource = PathUtil.getDAPSource(sourceName);
+        breakpointManager.fixBreakpoints(sourceName, b -> {
+            BreakpointEventArguments args = new BreakpointEventArguments();
+            Breakpoint breakpoint = converter.toDAPBreakpoint(dapSource, result -> {
+            }, b);
+            args.setBreakpoint(breakpoint);
+            args.setReason(BreakpointEventArgumentsReason.CHANGED);
+            client.breakpoint(args);
+        }, b -> {
+            BreakpointEventArguments args = new BreakpointEventArguments();
+            Breakpoint breakpoint = new Breakpoint();
+            breakpoint.setSource(dapSource);
+            breakpoint.setId(b);
+            args.setBreakpoint(breakpoint);
+            args.setReason(BreakpointEventArgumentsReason.REMOVED);
+            client.breakpoint(args);
+        });
+    }
+
 
     public void sendLogs(String pack, String type, String line) {
         Calendar calendar = Calendar.getInstance();

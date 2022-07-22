@@ -1,5 +1,6 @@
 package com.warmthdawn.kubejsdebugadapter.adapter;
 
+import com.ibm.icu.impl.Pair;
 import com.warmthdawn.kubejsdebugadapter.data.*;
 import com.warmthdawn.kubejsdebugadapter.data.variable.ErrorVariable;
 import com.warmthdawn.kubejsdebugadapter.data.variable.IVariableTreeNode;
@@ -70,6 +71,7 @@ public class DataConverter {
         if (breakpoint.getColumn() != null) {
             result.setColumn(toKubeLineNumber(breakpoint.getColumn()));
         }
+        result.setId(id);
         return result;
     }
 
@@ -130,5 +132,18 @@ public class DataConverter {
             result[i] = s;
         }
         return result;
+    }
+
+    public BreakpointLocation[] toDAPBreakpointLocations(List<Pair<ScriptLocation, ScriptLocation>> locations) {
+        List<BreakpointLocation> result = new ArrayList<>(locations.size());
+        for (Pair<ScriptLocation, ScriptLocation> location : locations) {
+            BreakpointLocation b = new BreakpointLocation();
+            b.setLine(toDAPLineNumber(location.first.getLineNumber()));
+            b.setColumn(toDAPColumnNumber(location.first.getColumnNumber()));
+            b.setEndLine(toDAPLineNumber(location.second.getLineNumber()));
+            b.setEndColumn(toDAPColumnNumber(location.second.getColumnNumber()));
+            result.add(b);
+        }
+        return result.toArray(BreakpointLocation[]::new);
     }
 }
