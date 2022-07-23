@@ -2,6 +2,7 @@ package com.warmthdawn.kubejsdebugadapter.adapter;
 
 import com.warmthdawn.kubejsdebugadapter.data.breakpoint.ScriptBreakpointInfo;
 import com.warmthdawn.kubejsdebugadapter.data.breakpoint.ScriptSourceData;
+import com.warmthdawn.kubejsdebugadapter.data.variable.LazyVariable;
 import com.warmthdawn.kubejsdebugadapter.debugger.DebugRuntime;
 import com.warmthdawn.kubejsdebugadapter.debugger.DebugSession;
 import com.warmthdawn.kubejsdebugadapter.debugger.DebugThread;
@@ -196,6 +197,7 @@ public class KubeDebugAdapter implements IDebugProtocolServer {
             IVariableTreeNode variable = session.getVariable(id);
             VariablesResponse response = new VariablesResponse();
             List<IVariableTreeNode> children = variable.getChildren(session);
+
             Variable[] variables = new Variable[children.size()];
             for (int i = 0; i < children.size(); i++) {
                 variables[i] = converter.toDAPVariable(children.get(i));

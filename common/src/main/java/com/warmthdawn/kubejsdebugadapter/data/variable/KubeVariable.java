@@ -10,6 +10,7 @@ import dev.latvian.mods.rhino.ContextFactory;
 import dev.latvian.mods.rhino.Scriptable;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -27,7 +28,7 @@ public class KubeVariable implements IVariableTreeNode {
     private ContextFactory factory;
     private VariableDescriptor descriptor;
 
-    public KubeVariable(Object variable, int id, String name, ContextFactory factory, VariableDescriptor descriptor) {
+    public KubeVariable(Object variable, int id, String name, ContextFactory factory, @NotNull VariableDescriptor descriptor) {
         this.obj = variable;
         this.id = id;
         this.name = name;

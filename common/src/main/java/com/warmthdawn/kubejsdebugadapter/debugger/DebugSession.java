@@ -10,6 +10,7 @@ import dev.latvian.mods.rhino.ContextFactory;
 import dev.latvian.mods.rhino.Scriptable;
 import dev.latvian.mods.rhino.Undefined;
 import org.eclipse.lsp4j.debug.ScopePresentationHint;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
 import java.util.function.Consumer;
@@ -61,7 +62,9 @@ public class DebugSession {
         String key = VariableUtils.variableToString(factory, objectId);
         try {
             VariableDescriptor descriptor = PropertyUtils.getDescriptor(factory, parent, objectId);
-
+            if(descriptor == null) {
+                descriptor = VariableDescriptor.createVar(key);
+            }
             if (descriptor.isLazy()) {
                 return createLazy(parent, objectId, key, factory, descriptor);
             } else {
@@ -78,13 +81,13 @@ public class DebugSession {
     }
 
 
-    public KubeVariable createVariable(Object variable, String name, ContextFactory factory, VariableDescriptor descriptor) {
+    public KubeVariable createVariable(Object variable, String name, ContextFactory factory, @NotNull VariableDescriptor descriptor) {
         KubeVariable result = new KubeVariable(variable, nextVariableId(), name, factory, descriptor);
         addVariable(result);
         return result;
     }
 
-    public LazyVariable createLazy(Object parent, Object objectId, String name, ContextFactory factory, VariableDescriptor descriptor) {
+    public LazyVariable createLazy(Object parent, Object objectId, String name, ContextFactory factory, @NotNull VariableDescriptor descriptor) {
         LazyVariable result = new LazyVariable(nextVariableId(), name, parent, objectId, factory, descriptor);
         addVariable(result);
         return result;

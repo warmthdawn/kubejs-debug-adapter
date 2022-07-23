@@ -85,7 +85,7 @@ public abstract class MixinCodeGenerator {
 
     }
 
-    private boolean hasSourceFile = false;
+    private boolean enabled = false;
 
 
     @Inject(method = "compile", at = @At("RETURN"))
@@ -108,8 +108,11 @@ public abstract class MixinCodeGenerator {
         if (sourceName == null) {
             return;
         }
-        hasSourceFile = true;
+        if (!sourceName.equals("<eval>")) {
+            return;
+        }
 
+        enabled = true;
         ScriptSourceData sourceData = DebugRuntime.getInstance().getSourceManager().getSourceData(this.scriptOrFn.getSourceName());
 
         if (sourceData == null) {
@@ -128,7 +131,7 @@ public abstract class MixinCodeGenerator {
 
     @Inject(method = "visitStatement", at = @At("RETURN"))
     private void inject_visitStatement_RETURN(Node node, int initialStackDepth, CallbackInfo ci) {
-        if (!hasSourceFile) {
+        if (!enabled) {
             return;
         }
         statementMetaStack.pop();
@@ -166,7 +169,7 @@ public abstract class MixinCodeGenerator {
 
     @Inject(method = "visitStatement", at = @At("HEAD"))
     private void inject_visitStatement_HEAD(Node node, int initialStackDepth, CallbackInfo ci) {
-        if (!hasSourceFile) {
+        if (!enabled) {
             return;
         }
         statementMetaStack.push(-1);
@@ -221,7 +224,7 @@ public abstract class MixinCodeGenerator {
         }
 
         // Let 表达式，因为For循环会生成这玩意，淦
-        if(AstUtils.isTreeOf(node, letExpressionTree)) {
+        if (AstUtils.isTreeOf(node, letExpressionTree)) {
             Node target = node.getFirstChild().getFirstChild();
             if (findSimpleStatement(target)) return;
         }
@@ -279,7 +282,7 @@ public abstract class MixinCodeGenerator {
 
     @Inject(method = "visitExpression", at = @At(value = "HEAD"))
     private void inject_visitExpression_HEAD(Node node, int contextFlags, CallbackInfo ci) {
-        if (!hasSourceFile) {
+        if (!enabled) {
             return;
         }
         int type = node.getType();
@@ -302,7 +305,7 @@ public abstract class MixinCodeGenerator {
     @Inject(method = "visitExpression", at = @At(value = "INVOKE",
         target = "Ldev/latvian/mods/rhino/Node;getIntProp(II)I"), allow = 1)
     private void inject_visitExpression_CallExp(Node node, int contextFlags, CallbackInfo ci) {
-        if (!hasSourceFile) {
+        if (!enabled) {
             return;
         }
         int type = node.getType();

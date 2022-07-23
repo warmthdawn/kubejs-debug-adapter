@@ -120,6 +120,7 @@ public class KubeStackFrame implements DebugFrame {
             return;
         }
 
+        data.clearStepInfo();
         if (interrupt) {
             DebugThread thread = runtime.getThread(cx);
             bridge.notifyStop(thread.id(), reason);
@@ -128,7 +129,6 @@ public class KubeStackFrame implements DebugFrame {
             thread.interrupt();
             this.interrupted = false;
         }
-        data.clearStepInfo();
     }
 
 

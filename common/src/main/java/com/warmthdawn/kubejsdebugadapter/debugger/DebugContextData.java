@@ -1,12 +1,8 @@
 package com.warmthdawn.kubejsdebugadapter.debugger;
 
-import com.google.common.collect.ImmutableList;
 import com.warmthdawn.kubejsdebugadapter.api.IDebuggableContext;
 import dev.latvian.mods.rhino.Context;
 import dev.latvian.mods.rhino.ObjArray;
-
-import java.util.Collections;
-import java.util.List;
 
 public class DebugContextData {
     /**
@@ -21,7 +17,7 @@ public class DebugContextData {
     /**
      * Whether the debugger should break at the next line in this context.
      */
-    private boolean breakNextLine;
+    private boolean breakNextStmt;
 
     /**
      * The frame depth the debugger should stop at. Used to implement "step over" and "step
@@ -45,7 +41,7 @@ public class DebugContextData {
     }
 
     public boolean shouldPauseStep() {
-        if (!breakNextLine) {
+        if (!breakNextStmt) {
             return false;
         }
 
@@ -58,7 +54,7 @@ public class DebugContextData {
 
     public void clearStepInfo() {
         stopAtFrameDepth = -1;
-        breakNextLine = false;
+        breakNextStmt = false;
         shouldPause = false;
     }
 
@@ -71,28 +67,28 @@ public class DebugContextData {
     }
 
     public void stepInto() {
-        if (breakNextLine) {
+        if (breakNextStmt) {
             return;
         }
         stopAtFrameDepth = -1;
-        breakNextLine = true;
+        breakNextStmt = true;
     }
 
     public void stepOver() {
-        if (breakNextLine) {
+        if (breakNextStmt) {
             return;
         }
         stopAtFrameDepth = frameCount();
-        breakNextLine = true;
+        breakNextStmt = true;
     }
 
     public void stepOut() {
-        if (breakNextLine) {
+        if (breakNextStmt) {
             return;
         }
         if (frameCount() > 0) {
             stopAtFrameDepth = frameCount() - 1;
-            breakNextLine = true;
+            breakNextStmt = true;
         }
     }
 

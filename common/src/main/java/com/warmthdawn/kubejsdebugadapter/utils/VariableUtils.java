@@ -35,6 +35,8 @@ public class VariableUtils {
                 return "[object NativeJavaMethod]";
             } else if (value instanceof RecipeFunction) {
                 return "[object RecipeFunction:" + value + "]";
+            } else if (value instanceof NativeJSON) {
+                return "[object JSON]";
             } else {
                 try {
                     return Context.toString(value);
@@ -211,10 +213,20 @@ public class VariableUtils {
             return false;
         }
 
-        if (obj instanceof Function) {
+        if (obj instanceof NativeJavaClass) {
+            return true;
+        }
+
+        if (obj instanceof NativeJavaMethod) {
             return false;
         }
 
+        if (obj instanceof RecipeFunction) {
+            return false;
+        }
+        if (obj instanceof DynamicFunction) {
+            return false;
+        }
 
         return true;
 

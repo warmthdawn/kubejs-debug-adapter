@@ -22,10 +22,10 @@ public class Utils {
 
     public static ExecutorService timeoutAsync = Executors.newCachedThreadPool();
 
-    public static <R> R timeoutWith(int timeout, Supplier<R> supplier) throws ExecutionException {
+    public static <R> R timeoutWith(int timeout, Supplier<R> supplier) throws ExecutionException, TimeoutException {
         try {
             return CompletableFuture.supplyAsync(supplier, timeoutAsync).get(timeout, java.util.concurrent.TimeUnit.MILLISECONDS);
-        } catch (InterruptedException | TimeoutException ignored) {
+        } catch (InterruptedException ignored) {
             return null;
         }
     }

@@ -126,6 +126,7 @@ public class DataConverter {
         }
 
         if (variable instanceof LazyVariable) {
+            result.setValue("<lazy>");
             VariableDescriptor descriptor = ((LazyVariable) variable).getDescriptor();
             VariablePresentationHint hint = new VariablePresentationHint();
             hint.setKind(descriptor.getKind());
