@@ -1,5 +1,6 @@
 package com.warmthdawn.kubejsdebugadapter.debugger;
 
+import com.google.common.collect.ImmutableSet;
 import com.warmthdawn.kubejsdebugadapter.adapter.DebuggerBridge;
 import com.warmthdawn.kubejsdebugadapter.api.DebugFrame;
 import com.warmthdawn.kubejsdebugadapter.api.DebuggableScript;
@@ -12,10 +13,16 @@ import com.warmthdawn.kubejsdebugadapter.utils.LocationParser;
 import dev.latvian.mods.rhino.*;
 import org.eclipse.lsp4j.debug.StoppedEventArgumentsReason;
 
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
+
 public class KubeStackFrame implements DebugFrame {
 
 
     private final String[] paramNames;
+    private final Set<String> localNames;
+
 
     public KubeStackFrame(int id, DebugRuntime runtime, DebuggableScript function, ContextFactory factory, FunctionSourceData sourceData, LocationParser locationParser) {
         this.id = id;
@@ -31,6 +38,18 @@ public class KubeStackFrame implements DebugFrame {
         for (int i = 0; i < paramCount; i++) {
             paramNames[i] = function.getParamOrVarName(i);
         }
+
+        int paramAndVarCount = function.getParamAndVarCount();
+        if (paramAndVarCount > paramCount) {
+            String[] localNames = new String[paramAndVarCount - paramCount];
+            for (int i = paramCount; i < paramAndVarCount; i++) {
+                localNames[i - paramCount] = function.getParamOrVarName(i);
+            }
+            this.localNames = ImmutableSet.copyOf(localNames);
+        } else {
+            this.localNames = Collections.emptySet();
+        }
+
 
         this.paramNames = paramNames;
     }
@@ -59,28 +78,28 @@ public class KubeStackFrame implements DebugFrame {
     }
 
     public int getLine() {
-        if(location == null) {
+        if (location == null) {
             return -1;
         }
         return location.getLineNumber();
     }
 
     public int getColumn() {
-        if(location == null) {
+        if (location == null) {
             return -1;
         }
         return location.getColumnNumber();
     }
 
     public int getEndLine() {
-        if(endLocation == null) {
+        if (endLocation == null) {
             return -1;
         }
         return endLocation.getLineNumber();
     }
 
     public int getEndColumn() {
-        if(endLocation == null) {
+        if (endLocation == null) {
             return -1;
         }
         return endLocation.getColumnNumber();
@@ -252,6 +271,11 @@ public class KubeStackFrame implements DebugFrame {
 
     public String[] getParamNames() {
         return paramNames;
+    }
+
+
+    public Set<String> getLocalNames() {
+        return localNames;
     }
 
     public Scriptable getScope() {

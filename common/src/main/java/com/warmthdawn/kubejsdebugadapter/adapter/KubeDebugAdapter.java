@@ -202,7 +202,7 @@ public class KubeDebugAdapter implements IDebugProtocolServer {
             }
             response.setVariables(variables);
             return response;
-        }, async);
+        }, compilerAsync);
     }
 
     @Override

@@ -2,10 +2,7 @@ package com.warmthdawn.kubejsdebugadapter.adapter;
 
 import com.warmthdawn.kubejsdebugadapter.data.breakpoint.ScriptBreakpointInfo;
 import com.warmthdawn.kubejsdebugadapter.data.breakpoint.UserDefinedBreakpoint;
-import com.warmthdawn.kubejsdebugadapter.data.variable.ErrorVariable;
-import com.warmthdawn.kubejsdebugadapter.data.variable.IVariableTreeNode;
-import com.warmthdawn.kubejsdebugadapter.data.variable.KubeVariable;
-import com.warmthdawn.kubejsdebugadapter.data.variable.VariableScope;
+import com.warmthdawn.kubejsdebugadapter.data.variable.*;
 import com.warmthdawn.kubejsdebugadapter.debugger.DebugSession;
 import com.warmthdawn.kubejsdebugadapter.debugger.DebugThread;
 import com.warmthdawn.kubejsdebugadapter.debugger.KubeStackFrame;
@@ -113,13 +110,32 @@ public class DataConverter {
         Variable result = new Variable();
         result.setName(variable.getName());
         result.setVariablesReference(variable.getId());
-        if (variable instanceof KubeVariable) {
-            result.setValue(((KubeVariable) variable).getValue());
-            result.setType(((KubeVariable) variable).getType());
+        if (variable instanceof KubeVariable kubeVariable) {
+            result.setValue(kubeVariable.getValue());
+            result.setType(kubeVariable.getType());
+            VariableDescriptor descriptor = kubeVariable.getDescriptor();
+            VariablePresentationHint hint = new VariablePresentationHint();
+            hint.setKind(descriptor.getKind());
+            if (descriptor.isReadonly()) {
+                hint.setAttributes(new String[]{VariablePresentationHintAttributes.READ_ONLY});
+            }
+            result.setPresentationHint(hint);
         }
         if (variable instanceof ErrorVariable) {
             result.setValue(((ErrorVariable) variable).getValue());
         }
+
+        if (variable instanceof LazyVariable) {
+            VariableDescriptor descriptor = ((LazyVariable) variable).getDescriptor();
+            VariablePresentationHint hint = new VariablePresentationHint();
+            hint.setKind(descriptor.getKind());
+            if (descriptor.isReadonly()) {
+                hint.setAttributes(new String[]{VariablePresentationHintAttributes.READ_ONLY});
+            }
+            hint.setLazy(true);
+            result.setPresentationHint(hint);
+        }
+
 
         return result;
     }

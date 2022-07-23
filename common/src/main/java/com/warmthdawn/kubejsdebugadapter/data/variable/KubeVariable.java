@@ -1,10 +1,13 @@
 package com.warmthdawn.kubejsdebugadapter.data.variable;
 
 import com.warmthdawn.kubejsdebugadapter.api.DebuggableScript;
+import com.warmthdawn.kubejsdebugadapter.data.breakpoint.FunctionSourceData;
+import com.warmthdawn.kubejsdebugadapter.data.breakpoint.ScriptSourceData;
+import com.warmthdawn.kubejsdebugadapter.debugger.DebugRuntime;
 import com.warmthdawn.kubejsdebugadapter.debugger.DebugSession;
-import com.warmthdawn.kubejsdebugadapter.utils.PathUtil;
-import com.warmthdawn.kubejsdebugadapter.utils.VariableUtils;
+import com.warmthdawn.kubejsdebugadapter.utils.*;
 import dev.latvian.mods.rhino.ContextFactory;
+import dev.latvian.mods.rhino.Scriptable;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -22,27 +25,20 @@ public class KubeVariable implements IVariableTreeNode {
     private String name;
     private String type;
     private ContextFactory factory;
+    private VariableDescriptor descriptor;
 
-    public KubeVariable(Object variable, int id, String name, ContextFactory factory) {
+    public KubeVariable(Object variable, int id, String name, ContextFactory factory, VariableDescriptor descriptor) {
         this.obj = variable;
         this.id = id;
         this.name = name;
         this.factory = factory;
+        this.descriptor = descriptor;
     }
 
 
     public String getValue() {
         if (value == null) {
-            if (obj instanceof DebuggableScript && ((DebuggableScript) obj).isFunction()) {
-                if (((DebuggableScript) obj).getSourceName() != null) {
-                    String source = PathUtil.getSourcePath(((DebuggableScript) obj).getSourceName()).toString();
-                    // TODO xxx
-//                    value = "@ " + source + ":" + ((DebuggableScript) obj).firstLineNumber();
-                }
-            }
-            if (value == null) {
-                value = VariableUtils.variableToString(factory, obj);
-            }
+            value = VariableUtils.variableValue(factory, obj);
         }
         return value;
     }
@@ -54,8 +50,8 @@ public class KubeVariable implements IVariableTreeNode {
         return type;
     }
 
-    public boolean isPrimitive() {
-        return VariableUtils.isPrimitive(obj);
+    public VariableDescriptor getDescriptor() {
+        return descriptor;
     }
 
     @Override
@@ -70,23 +66,18 @@ public class KubeVariable implements IVariableTreeNode {
 
     @Override
     public List<IVariableTreeNode> getChildren(DebugSession session) {
-        if (isPrimitive()) {
+        if (!VariableUtils.shouldShowChildren(factory, obj)) {
             return Collections.emptyList();
         }
+        if(!(obj instanceof Scriptable scriptable)) {
+            return Collections.emptyList();
+        }
+
         Object[] objectIds = VariableUtils.getObjectIds(factory, obj);
         List<IVariableTreeNode> children = new ArrayList<>();
         for (Object objectId : objectIds) {
-            try {
-                // TODO: 超时
-                children.add(session.createVariable(
-                        VariableUtils.getObjectProperty(factory, obj, objectId),
-                        VariableUtils.variableToString(factory, objectId),
-                        factory
-                    )
-                );
-            } catch (Throwable e) {
-                children.add(session.createError(e, VariableUtils.variableToString(factory, objectId), factory));
-            }
+            IVariableTreeNode child = session.resolveAndCreateVariable(scriptable, objectId, factory);
+            children.add(child);
         }
         return children;
     }

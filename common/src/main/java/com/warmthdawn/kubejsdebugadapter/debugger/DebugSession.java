@@ -1,19 +1,17 @@
 package com.warmthdawn.kubejsdebugadapter.debugger;
 
-import com.warmthdawn.kubejsdebugadapter.data.variable.ErrorVariable;
+import com.warmthdawn.kubejsdebugadapter.data.variable.*;
+import com.warmthdawn.kubejsdebugadapter.utils.PathUtil;
+import com.warmthdawn.kubejsdebugadapter.utils.PropertyUtils;
+import com.warmthdawn.kubejsdebugadapter.utils.Utils;
 import com.warmthdawn.kubejsdebugadapter.utils.VariableUtils;
-import com.warmthdawn.kubejsdebugadapter.data.variable.IVariableTreeNode;
-import com.warmthdawn.kubejsdebugadapter.data.variable.KubeVariable;
-import com.warmthdawn.kubejsdebugadapter.data.variable.VariableScope;
+import dev.latvian.mods.kubejs.script.ScriptPack;
 import dev.latvian.mods.rhino.ContextFactory;
 import dev.latvian.mods.rhino.Scriptable;
 import dev.latvian.mods.rhino.Undefined;
 import org.eclipse.lsp4j.debug.ScopePresentationHint;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.Consumer;
 
 public class DebugSession {
@@ -55,7 +53,39 @@ public class DebugSession {
     }
 
     public KubeVariable createVariable(Object variable, String name, ContextFactory factory) {
-        KubeVariable result = new KubeVariable(variable, nextVariableId(), name, factory);
+        VariableDescriptor descriptor = VariableDescriptor.createVar(name);
+        return createVariable(variable, name, factory, descriptor);
+    }
+
+    public IVariableTreeNode resolveAndCreateVariable(Scriptable parent, Object objectId, ContextFactory factory) {
+        String key = VariableUtils.variableToString(factory, objectId);
+        try {
+            VariableDescriptor descriptor = PropertyUtils.getDescriptor(factory, parent, objectId);
+
+            if (descriptor.isLazy()) {
+                return createLazy(parent, objectId, key, factory, descriptor);
+            } else {
+                Object objectProperty = Utils.timeoutWith(2000, () ->
+                    VariableUtils.getObjectProperty(factory, parent, objectId));
+
+                return createVariable(objectProperty, key, factory, descriptor);
+            }
+
+
+        } catch (Throwable e) {
+            return createError(e, key, factory);
+        }
+    }
+
+
+    public KubeVariable createVariable(Object variable, String name, ContextFactory factory, VariableDescriptor descriptor) {
+        KubeVariable result = new KubeVariable(variable, nextVariableId(), name, factory, descriptor);
+        addVariable(result);
+        return result;
+    }
+
+    public LazyVariable createLazy(Object parent, Object objectId, String name, ContextFactory factory, VariableDescriptor descriptor) {
+        LazyVariable result = new LazyVariable(nextVariableId(), name, parent, objectId, factory, descriptor);
         addVariable(result);
         return result;
     }
@@ -71,7 +101,7 @@ public class DebugSession {
         ContextFactory factory = frame.getFactory();
         List<VariableScope> variables = new ArrayList<>();
 
-        variables.add(createVariableScope("arguments", builder -> {
+        variables.add(createVariableScope("Arguments", builder -> {
             Object[] args = frame.getArgs();
             String[] paramNames = frame.getParamNames();
             for (int i = 0; i < paramNames.length; i++) {
@@ -83,20 +113,38 @@ public class DebugSession {
             }
         }, ScopePresentationHint.ARGUMENTS));
 
-        variables.add(createVariableScope("locals", builder -> {
-            if(frame.getThisObj() != null && frame.getThisObj() != Undefined.instance) {
+
+        variables.add(createVariableScope("Locals", builder -> {
+            if (frame.getThisObj() != null && frame.getThisObj() != Undefined.instance) {
                 builder.addChild(createVariable(frame.getThisObj(), "this", factory));
             }
+
+
             Scriptable scope = frame.getScope();
             Object[] objectIds = VariableUtils.getObjectIds(factory, scope);
+            Set<String> localNames = frame.getLocalNames();
             for (Object objectId : objectIds) {
-                Object object = VariableUtils.getObjectProperty(factory, scope, objectId);
-                String name = VariableUtils.variableToString(factory, objectId);
-                builder.addChild(createVariable(object, name, factory));
+                if (!(objectId instanceof String)) {
+                    continue;
+                }
+                if (!localNames.contains(objectId)) {
+                    continue;
+                }
+
+                builder.addChild(resolveAndCreateVariable(scope, objectId, factory));
             }
         }, ScopePresentationHint.LOCALS));
 
 
+        // 全局：
+        variables.add(createVariableScope("Globals", builder -> {
+            ScriptPack scriptPack = PathUtil.getScriptPack(frame.getSource());
+            Scriptable global = scriptPack.scope;
+            Object[] objectIds = VariableUtils.getObjectIds(factory, global);
+            for (Object objectId : objectIds) {
+                builder.addChild(resolveAndCreateVariable(global, objectId, factory));
+            }
+        }, ScopePresentationHint.LOCALS));
 
         return variables;
     }

@@ -2,13 +2,17 @@ package com.warmthdawn.kubejsdebugadapter.utils;
 
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
+import dev.latvian.mods.kubejs.KubeJS;
 import dev.latvian.mods.kubejs.KubeJSPaths;
+import dev.latvian.mods.kubejs.script.ScriptPack;
+import dev.latvian.mods.kubejs.server.ServerScriptManager;
 import dev.latvian.mods.kubejs.util.UtilsJS;
 import org.eclipse.lsp4j.debug.Source;
 
 import java.io.File;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.HashMap;
 import java.util.Map;
 
 public class PathUtil {
@@ -43,7 +47,7 @@ public class PathUtil {
     public static Source getDAPSource(String sourceId) {
         Path path = getSourcePath(sourceId);
         Source result = new Source();
-        if(path != null) {
+        if (path != null) {
             result.setPath(path.toString());
             result.setName(path.getFileName().toString());
         }
@@ -63,5 +67,25 @@ public class PathUtil {
             return null;
         }
         return namespacePath.resolve(path);
+    }
+
+    public static ScriptPack getScriptPack(String sourceId) {
+        if (sourceId == null) {
+            throw new NullPointerException();
+        }
+        int i = sourceId.indexOf(":");
+        if (i == -1) {
+            throw new IllegalArgumentException();
+        }
+
+        String namespace = sourceId.substring(0, i);
+
+        return switch (namespace) {
+            case "startup_scripts" -> KubeJS.startupScriptManager.packs.get(namespace);
+            case "client_scripts" -> KubeJS.clientScriptManager.packs.get(namespace);
+            case "server_scripts" -> ServerScriptManager.instance.scriptManager.packs.get(namespace);
+            default -> throw new IllegalArgumentException();
+        };
+
     }
 }

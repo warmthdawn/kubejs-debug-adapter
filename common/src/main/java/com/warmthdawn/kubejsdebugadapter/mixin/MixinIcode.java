@@ -5,7 +5,7 @@ import org.spongepowered.asm.mixin.gen.Accessor;
 import org.spongepowered.asm.mixin.injection.ModifyVariable;
 
 @Mixin(targets = "dev.latvian.mods.rhino.Icode", remap = false)
-public class MixinIcode {
+public abstract class MixinIcode {
 
     private static int MY_MIN_ICODE = -69;
 

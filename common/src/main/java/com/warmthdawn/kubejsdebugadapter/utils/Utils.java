@@ -3,7 +3,10 @@ package com.warmthdawn.kubejsdebugadapter.utils;
 import com.warmthdawn.kubejsdebugadapter.api.DebuggableScript;
 import dev.latvian.mods.rhino.ObjArray;
 
+import java.util.concurrent.*;
 import java.util.function.BooleanSupplier;
+import java.util.function.Function;
+import java.util.function.Supplier;
 
 public class Utils {
 
@@ -14,6 +17,16 @@ public class Utils {
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
+        }
+    }
+
+    public static ExecutorService timeoutAsync = Executors.newCachedThreadPool();
+
+    public static <R> R timeoutWith(int timeout, Supplier<R> supplier) throws ExecutionException {
+        try {
+            return CompletableFuture.supplyAsync(supplier, timeoutAsync).get(timeout, java.util.concurrent.TimeUnit.MILLISECONDS);
+        } catch (InterruptedException | TimeoutException ignored) {
+            return null;
         }
     }
 
