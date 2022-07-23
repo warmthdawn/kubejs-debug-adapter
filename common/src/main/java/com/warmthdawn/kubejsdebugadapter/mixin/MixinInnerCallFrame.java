@@ -41,7 +41,9 @@ public abstract class MixinInnerCallFrame implements IDebuggableCallFrame {
 
     @Override
     public void setDebuggerFrame(DebugFrame frame) {
-        this.useActivation = true;
+        if(frame != null) {
+            this.useActivation = true;
+        }
         this.debuggerFrame = frame;
     }
 

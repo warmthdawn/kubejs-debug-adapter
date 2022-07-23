@@ -71,6 +71,10 @@ public class DataConverter {
         } else {
             result.setColumn(-1);
         }
+
+        result.setCondition(breakpoint.getCondition());
+        result.setLogMessage(breakpoint.getLogMessage());
+
         result.setId(id);
         return result;
     }

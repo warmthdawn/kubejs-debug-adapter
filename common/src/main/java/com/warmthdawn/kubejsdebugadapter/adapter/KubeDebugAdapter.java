@@ -2,7 +2,7 @@ package com.warmthdawn.kubejsdebugadapter.adapter;
 
 import com.warmthdawn.kubejsdebugadapter.data.breakpoint.ScriptBreakpointInfo;
 import com.warmthdawn.kubejsdebugadapter.data.breakpoint.ScriptSourceData;
-import com.warmthdawn.kubejsdebugadapter.data.variable.LazyVariable;
+import com.warmthdawn.kubejsdebugadapter.data.variable.KubeVariable;
 import com.warmthdawn.kubejsdebugadapter.debugger.DebugRuntime;
 import com.warmthdawn.kubejsdebugadapter.debugger.DebugSession;
 import com.warmthdawn.kubejsdebugadapter.debugger.DebugThread;
@@ -49,7 +49,7 @@ public class KubeDebugAdapter implements IDebugProtocolServer {
     public CompletableFuture<Capabilities> initialize(InitializeRequestArguments args) {
 
         this.converter = new DataConverter(args.getLinesStartAt1(), args.getColumnsStartAt1());
-        this.bridge = new DebuggerBridge(this.client, converter);
+        this.bridge = new DebuggerBridge(this.client, converter, session);
         this.runtime.setBridge(bridge);
         this.bridge.sendOutput("Connected to debug adapter");
         log.info("Connected to debug adapter");
@@ -62,9 +62,17 @@ public class KubeDebugAdapter implements IDebugProtocolServer {
         capabilities.setSupportsEvaluateForHovers(true);
         capabilities.setSupportsConfigurationDoneRequest(true);
         capabilities.setSupportsBreakpointLocationsRequest(true);
+        capabilities.setSupportsLogPoints(true);
+        capabilities.setSupportsConditionalBreakpoints(true);
+        capabilities.setSupportsLoadedSourcesRequest(true);
         capabilities.setCompletionTriggerCharacters(new String[]{".", "[", "'", "\""});
 
 
+        capabilities.setSupportsSetVariable(false);
+        capabilities.setSupportsSetExpression(false);
+        capabilities.setSupportsHitConditionalBreakpoints(false);
+        capabilities.setSupportsFunctionBreakpoints(false);
+        capabilities.setSupportsGotoTargetsRequest(false);
         capabilities.setSupportsTerminateRequest(false);
         capabilities.setSupportTerminateDebuggee(false);
         capabilities.setSupportsTerminateThreadsRequest(false);
@@ -80,6 +88,16 @@ public class KubeDebugAdapter implements IDebugProtocolServer {
 
 
     @Override
+    public CompletableFuture<LoadedSourcesResponse> loadedSources(LoadedSourcesArguments args) {
+        return CompletableFuture.supplyAsync(() -> {
+            LoadedSourcesResponse response = new LoadedSourcesResponse();
+            Source[] loadedSources = runtime.getSourceManager().getLoadedSources();
+            response.setSources(loadedSources);
+            return response;
+        }, async);
+    }
+
+    @Override
     public CompletableFuture<Void> attach(Map<String, Object> args) {
         return new CompletableFuture<>();
     }
@@ -91,8 +109,6 @@ public class KubeDebugAdapter implements IDebugProtocolServer {
         this.runtime = DebugRuntime.getInstance();
 
     }
-
-
 
 
     @Override
@@ -116,10 +132,10 @@ public class KubeDebugAdapter implements IDebugProtocolServer {
             Source source = args.getSource();
             String sourceId = PathUtil.getSourceId(source);
             ScriptSourceData sourceData = runtime.getSourceManager().getSourceData(sourceId);
-            if(sourceData == null) {
+            if (sourceData == null) {
                 sourceData = runtime.getSourceManager().compileSource(sourceId);
             }
-            if(!sourceData.isFinished()) {
+            if (!sourceData.isFinished()) {
                 Utils.waitFor(sourceData::isFinished);
             }
             int startLine = converter.toKubeLineNumber(args.getLine());
@@ -146,6 +162,7 @@ public class KubeDebugAdapter implements IDebugProtocolServer {
             return response;
         }, async);
     }
+
 
     @Override
     public CompletableFuture<SetFunctionBreakpointsResponse> setFunctionBreakpoints(SetFunctionBreakpointsArguments args) {

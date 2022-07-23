@@ -285,8 +285,7 @@ function initializeCoreMod() {
                 var arrayLength = method.instructions.size();
                 for (var i = 0; i < arrayLength; i++) {
                     var insn = method.instructions.get(i);
-                    if (insn.getOpcode() !== Opcodes.INVOKESPECIAL) {
-                        hasSuper = true
+                    if (!(insn.getOpcode() === Opcodes.PUTFIELD && insn.name === "useActivation")) {
                         continue;
                     }
 

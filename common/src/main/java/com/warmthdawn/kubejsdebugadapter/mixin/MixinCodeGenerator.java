@@ -108,7 +108,7 @@ public abstract class MixinCodeGenerator {
         if (sourceName == null) {
             return;
         }
-        if (!sourceName.equals("<eval>")) {
+        if (sourceName.equals("<eval>")) {
             return;
         }
 

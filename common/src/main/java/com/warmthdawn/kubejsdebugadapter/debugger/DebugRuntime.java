@@ -56,6 +56,7 @@ public class DebugRuntime {
         return sourceManager;
     }
 
+
     public DebugThread newThread(Context cx, String name) {
         int id = nextThreadId();
         DebugThread thread = new DebugThread(id, this, cx, name);

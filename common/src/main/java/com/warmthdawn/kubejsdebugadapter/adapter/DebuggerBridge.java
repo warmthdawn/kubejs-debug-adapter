@@ -3,21 +3,33 @@ package com.warmthdawn.kubejsdebugadapter.adapter;
 import com.warmthdawn.kubejsdebugadapter.data.breakpoint.ScriptLocation;
 import com.warmthdawn.kubejsdebugadapter.data.breakpoint.UserDefinedBreakpoint;
 import com.warmthdawn.kubejsdebugadapter.data.breakpoint.BreakpointMeta;
+import com.warmthdawn.kubejsdebugadapter.data.variable.IVariableTreeNode;
 import com.warmthdawn.kubejsdebugadapter.debugger.BreakpointManager;
+import com.warmthdawn.kubejsdebugadapter.debugger.DebugSession;
+import com.warmthdawn.kubejsdebugadapter.utils.EvalUtils;
 import com.warmthdawn.kubejsdebugadapter.utils.LocationParser;
 import com.warmthdawn.kubejsdebugadapter.utils.PathUtil;
+import com.warmthdawn.kubejsdebugadapter.utils.VariableUtils;
+import dev.latvian.mods.rhino.ContextFactory;
+import dev.latvian.mods.rhino.Scriptable;
 import org.eclipse.lsp4j.debug.*;
 import org.eclipse.lsp4j.debug.services.IDebugProtocolClient;
 
+import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.List;
+import java.util.regex.Pattern;
 
 public class DebuggerBridge {
     private final IDebugProtocolClient client;
     private final DataConverter converter;
 
-    public DebuggerBridge(IDebugProtocolClient client, DataConverter converter) {
+    private final DebugSession session;
+
+    public DebuggerBridge(IDebugProtocolClient client, DataConverter converter, DebugSession session) {
         this.client = client;
         this.converter = converter;
+        this.session = session;
     }
 
     private final BreakpointManager breakpointManager = new BreakpointManager();
@@ -58,6 +70,10 @@ public class DebuggerBridge {
     }
 
     public void sendOutput(String output) {
+        sendOutput(output, -1);
+    }
+
+    public void sendOutput(String output, int id) {
         OutputEventArguments args = new OutputEventArguments();
         Calendar calendar = Calendar.getInstance();
         StringBuilder sb = new StringBuilder();
@@ -68,6 +84,10 @@ public class DebuggerBridge {
         sb.append(System.lineSeparator());
         args.setOutput(sb.toString());
         args.setCategory(OutputEventArgumentsCategory.CONSOLE);
+
+        if (id >= 0) {
+            args.setVariablesReference(id);
+        }
         client.output(args);
     }
 
@@ -162,4 +182,18 @@ public class DebuggerBridge {
 
     }
 
+    private static final Pattern LOGMESSAGE_PATTERN = Pattern.compile("\\{(.*)\\}");
+
+    public void logMessage(ContextFactory factory, String logMessage, Scriptable scope) {
+        String output = LOGMESSAGE_PATTERN.matcher(logMessage).replaceAll(it -> {
+            try {
+                Object result = EvalUtils.evaluate(factory, it.group(1), scope);
+                return VariableUtils.variableToString(factory, result);
+            } catch (Throwable t) {
+                return t.getMessage();
+            }
+        });
+        sendOutput(output);
+
+    }
 }

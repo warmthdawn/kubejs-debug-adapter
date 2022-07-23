@@ -9,6 +9,7 @@ import com.warmthdawn.kubejsdebugadapter.data.breakpoint.UserDefinedBreakpoint;
 import com.warmthdawn.kubejsdebugadapter.data.breakpoint.BreakpointMeta;
 import com.warmthdawn.kubejsdebugadapter.data.breakpoint.FunctionSourceData;
 import com.warmthdawn.kubejsdebugadapter.data.breakpoint.StatementBreakpointMeta;
+import com.warmthdawn.kubejsdebugadapter.utils.EvalUtils;
 import com.warmthdawn.kubejsdebugadapter.utils.LocationParser;
 import dev.latvian.mods.rhino.*;
 import org.eclipse.lsp4j.debug.StoppedEventArgumentsReason;
@@ -177,8 +178,23 @@ public class KubeStackFrame implements DebugFrame {
         UserDefinedBreakpoint userDefinedBreakpoint = bridge.getBreakpointAt(this.source, locationParser, meta);
         // 是否有断点
         if (userDefinedBreakpoint != null) {
-            // TODO: 其他的断点类型
-            handlePause(cx, StoppedEventArgumentsReason.BREAKPOINT);
+            if (userDefinedBreakpoint.getCondition() != null) {
+                try {
+                    Object evaluate = EvalUtils.evaluate(factory, userDefinedBreakpoint.getCondition(), scope);
+                    boolean match = ScriptRuntime.toBoolean(evaluate);
+                    if (!match) {
+                        return false;
+                    }
+                } catch (Throwable ignored) {
+                    return false;
+                }
+            }
+
+            if (userDefinedBreakpoint.getLogMessage() != null) {
+                bridge.logMessage(factory, userDefinedBreakpoint.getLogMessage(), getScope());
+            } else {
+                handlePause(cx, StoppedEventArgumentsReason.BREAKPOINT);
+            }
             return true;
         }
         return false;

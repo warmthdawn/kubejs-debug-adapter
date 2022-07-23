@@ -1,9 +1,9 @@
 package com.warmthdawn.kubejsdebugadapter.debugger;
 
 import com.warmthdawn.kubejsdebugadapter.data.breakpoint.ScriptSourceData;
-import com.warmthdawn.kubejsdebugadapter.utils.BreakpointUtils;
 import com.warmthdawn.kubejsdebugadapter.utils.PathUtil;
 import dev.latvian.mods.rhino.ContextFactory;
+import org.eclipse.lsp4j.debug.Source;
 
 import javax.annotation.Nullable;
 import java.io.IOException;
@@ -29,6 +29,16 @@ public class SourceManager {
         return loaded != null && loaded;
     }
 
+
+    public Source[] getLoadedSources() {
+        return loadedSources.entrySet()
+            .stream()
+            .filter(it -> it.getValue() != null && it.getValue())
+            .map(Map.Entry::getKey)
+            .map(PathUtil::getDAPSource)
+            .toArray(Source[]::new);
+    }
+
     public boolean hasCompiledSource(String sourceId) {
         return compiledSources.containsKey(sourceId);
     }
@@ -44,7 +54,7 @@ public class SourceManager {
 
     public ScriptSourceData compileSource(String sourceId) {
         Path path = PathUtil.getSourcePath(sourceId);
-        if(path == null || !Files.exists(path)) {
+        if (path == null || !Files.exists(path)) {
             return null;
         }
         try {
