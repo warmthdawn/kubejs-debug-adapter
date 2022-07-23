@@ -128,7 +128,7 @@ public class BreakpointUtils {
 
         ScriptLocation result = locFunc.apply(left);
         int resultLine = result.getLineNumber();
-        if (resultLine == line) {
+        if (resultLine >= line) {
             return left;
         }
         // 后面没有拉！
