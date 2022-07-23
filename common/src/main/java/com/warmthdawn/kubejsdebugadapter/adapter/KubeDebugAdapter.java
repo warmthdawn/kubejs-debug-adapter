@@ -2,6 +2,7 @@ package com.warmthdawn.kubejsdebugadapter.adapter;
 
 import com.ibm.icu.impl.Pair;
 import com.warmthdawn.kubejsdebugadapter.data.ScriptLocation;
+import com.warmthdawn.kubejsdebugadapter.data.breakpoint.ScriptBreakpointInfo;
 import com.warmthdawn.kubejsdebugadapter.data.breakpoint.ScriptSourceData;
 import com.warmthdawn.kubejsdebugadapter.debugger.DebugRuntime;
 import com.warmthdawn.kubejsdebugadapter.debugger.DebugSession;
@@ -126,7 +127,7 @@ public class KubeDebugAdapter implements IDebugProtocolServer {
             int endLine = args.getEndLine() == null ? startLine : converter.toKubeLineNumber(args.getEndLine());
             int startColumn = args.getColumn() == null ? 0 : converter.toKubeColumnNumber(args.getColumn());
             int endColumn = args.getEndColumn() == null ? -1 : converter.toKubeColumnNumber(args.getEndColumn());
-            List<Pair<ScriptLocation, ScriptLocation>> locationList = sourceData.getLocationList(startLine, endLine, startColumn, endColumn);
+            List<ScriptBreakpointInfo> locationList = sourceData.getLocationList(startLine, endLine, startColumn, endColumn);
 
             BreakpointLocation[] breakpointLocations = converter.toDAPBreakpointLocations(locationList);
 

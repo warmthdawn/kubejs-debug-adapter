@@ -3,10 +3,8 @@ package com.warmthdawn.kubejsdebugadapter.utils;
 import com.ibm.icu.impl.Pair;
 import com.warmthdawn.kubejsdebugadapter.data.ScriptLocation;
 import com.warmthdawn.kubejsdebugadapter.data.UserDefinedBreakpoint;
-import com.warmthdawn.kubejsdebugadapter.data.breakpoint.BreakpointMeta;
-import com.warmthdawn.kubejsdebugadapter.data.breakpoint.FunctionSourceData;
-import com.warmthdawn.kubejsdebugadapter.data.breakpoint.ScriptSourceData;
-import com.warmthdawn.kubejsdebugadapter.data.breakpoint.StatementBreakpointMeta;
+import com.warmthdawn.kubejsdebugadapter.data.breakpoint.*;
+import dev.latvian.mods.rhino.Kit;
 import it.unimi.dsi.fastutil.ints.IntIntPair;
 import it.unimi.dsi.fastutil.ints.IntSet;
 
@@ -15,9 +13,9 @@ import java.util.function.IntFunction;
 
 public class BreakpointUtils {
 
-    public static List<Pair<ScriptLocation, ScriptLocation>> collectBreakpoints(ScriptSourceData data) {
+    public static List<ScriptBreakpointInfo> collectBreakpoints(ScriptSourceData data) {
 
-        List<Pair<ScriptLocation, ScriptLocation>> locationList = new ArrayList<>();
+        List<ScriptBreakpointInfo> locationList = new ArrayList<>();
         LocationParser locationParser = data.getLocationParser();
 
         for (FunctionSourceData function : data.getFunctions()) {
@@ -25,16 +23,12 @@ public class BreakpointUtils {
                 // 方法断点
                 int lcStart = function.getLcStart();
                 locationList.add(
-                    Pair.of(
-                        locationParser.toLocation(lcStart),
-                        locationParser.toLocation(lcStart + 1)
-                    ));
+                    ScriptBreakpointInfo.create("function", locationParser, lcStart, 1)
+                );
                 int rcEnd = function.getRcEnd();
                 locationList.add(
-                    Pair.of(
-                        locationParser.toLocation(rcEnd),
-                        locationParser.toLocation(rcEnd + 1)
-                    ));
+                    ScriptBreakpointInfo.create("function", locationParser, rcEnd, 1)
+                );
             }
 
             for (StatementBreakpointMeta meta : function.getStatementBreakpointMetas()) {
@@ -42,10 +36,8 @@ public class BreakpointUtils {
                     int position = meta.getPosition();
                     int length = meta.getLength();
                     locationList.add(
-                        Pair.of(
-                            locationParser.toLocation(position),
-                            locationParser.toLocation(position + length)
-                        ));
+                        ScriptBreakpointInfo.create("statement", locationParser, position, length)
+                    );
                 }
             }
 
@@ -53,21 +45,55 @@ public class BreakpointUtils {
                 int position = meta.getPosition();
                 int length = meta.getLength();
                 locationList.add(
-                    Pair.of(
-                        locationParser.toLocation(position),
-                        locationParser.toLocation(position + length)
-                    ));
+                    ScriptBreakpointInfo.create("expression", locationParser, position, length)
+                );
             }
 
 
         }
 
         locationList.sort(
-            Comparator.comparingInt((Pair<ScriptLocation, ScriptLocation> o) -> o.first.getLineNumber()).
-                thenComparingInt(o -> o.first.getColumnNumber())
+            Comparator.comparingInt((ScriptBreakpointInfo o) -> o.getLocation().getLineNumber()).
+                thenComparingInt(o -> o.getLocation().getColumnNumber())
         );
         return locationList;
 
+    }
+
+    public static List<ScriptBreakpointInfo> collectMajorBreakpoints(List<ScriptBreakpointInfo> sortedBreakpoints) {
+        ArrayList<ScriptBreakpointInfo> majorBreakpoints = new ArrayList<>();
+
+        int prevLine = -1;
+
+        ScriptBreakpointInfo firstMajor = null;
+        ScriptBreakpointInfo firstMinor = null;
+        for (ScriptBreakpointInfo info : sortedBreakpoints) {
+            if (info.isLowPriority()) {
+                if (firstMinor == null) {
+                    firstMinor = info;
+                }
+            } else {
+                if (firstMajor == null) {
+                    firstMajor = info;
+                }
+            }
+            int lineNumber = info.getLocation().getLineNumber();
+            if (lineNumber != prevLine) {
+                // 新行
+                if (firstMajor != null) {
+                    majorBreakpoints.add(firstMajor);
+                } else {
+                    majorBreakpoints.add(firstMinor);
+                }
+
+                firstMinor = null;
+                firstMajor = null;
+                prevLine = lineNumber;
+            }
+
+        }
+
+        return majorBreakpoints;
     }
 
     // 查找某一行的第一个断点
@@ -231,17 +257,20 @@ public class BreakpointUtils {
     }
 
 
-    public static Pair<ScriptLocation, ScriptLocation> binarySearchLocation(List<Pair<ScriptLocation, ScriptLocation>> sortedLocations, int line, int column) {
+    public static ScriptBreakpointInfo binarySearchLocation(ScriptSourceData data, int line, int column) {
         int index;
         if (column < 0) {
-            index = binarySearchLocation(sortedLocations.size(), (i) -> sortedLocations.get(i).first, line);
+            List<ScriptBreakpointInfo> locations = data.getMajorLocationList();
+            index = binarySearchLocation(locations.size(), (i) -> locations.get(i).getLocation(), line);
+            return index == -1 ? null : locations.get(index);
         } else {
-            index = binarySearchLocation(sortedLocations.size(), (i) -> sortedLocations.get(i).first, line, column);
+            List<ScriptBreakpointInfo> locations = data.getLocationList();
+            index = binarySearchLocation(locations.size(), (i) -> locations.get(i).getEnd(), line, column);
+            return index == -1 ? null : locations.get(index);
         }
-        return index == -1 ? null : sortedLocations.get(index);
     }
 
-    public static List<UserDefinedBreakpoint> coerceBreakpoints(List<Pair<ScriptLocation, ScriptLocation>> sortedLocations,
+    public static List<UserDefinedBreakpoint> coerceBreakpoints(ScriptSourceData data,
                                                                 List<UserDefinedBreakpoint> raw,
                                                                 Collection<UserDefinedBreakpoint> changed,
                                                                 IntSet toRemove) {
@@ -251,12 +280,12 @@ public class BreakpointUtils {
         for (UserDefinedBreakpoint breakpoint : raw) {
             int line = breakpoint.getLine();
             int column = breakpoint.getColumn();
-            Pair<ScriptLocation, ScriptLocation> pair = binarySearchLocation(sortedLocations, line, column);
-            if (pair == null) {
+            ScriptBreakpointInfo info = binarySearchLocation(data, line, column);
+            if (info == null) {
                 toRemove.add(breakpoint.getId());
                 continue;
             }
-            ScriptLocation location = pair.first;
+            ScriptLocation location = info.getLocation();
 
             if (presentLocation.contains(location)) {
                 toRemove.add(breakpoint.getId());

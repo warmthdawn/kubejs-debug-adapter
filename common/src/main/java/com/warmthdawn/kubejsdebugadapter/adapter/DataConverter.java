@@ -2,6 +2,7 @@ package com.warmthdawn.kubejsdebugadapter.adapter;
 
 import com.ibm.icu.impl.Pair;
 import com.warmthdawn.kubejsdebugadapter.data.*;
+import com.warmthdawn.kubejsdebugadapter.data.breakpoint.ScriptBreakpointInfo;
 import com.warmthdawn.kubejsdebugadapter.data.variable.ErrorVariable;
 import com.warmthdawn.kubejsdebugadapter.data.variable.IVariableTreeNode;
 import com.warmthdawn.kubejsdebugadapter.data.variable.KubeVariable;
@@ -135,14 +136,14 @@ public class DataConverter {
         return result;
     }
 
-    public BreakpointLocation[] toDAPBreakpointLocations(List<Pair<ScriptLocation, ScriptLocation>> locations) {
+    public BreakpointLocation[] toDAPBreakpointLocations(List<ScriptBreakpointInfo> locations) {
         List<BreakpointLocation> result = new ArrayList<>(locations.size());
-        for (Pair<ScriptLocation, ScriptLocation> location : locations) {
+        for (ScriptBreakpointInfo location : locations) {
             BreakpointLocation b = new BreakpointLocation();
-            b.setLine(toDAPLineNumber(location.first.getLineNumber()));
-            b.setColumn(toDAPColumnNumber(location.first.getColumnNumber()));
-            b.setEndLine(toDAPLineNumber(location.second.getLineNumber()));
-            b.setEndColumn(toDAPColumnNumber(location.second.getColumnNumber()));
+            b.setLine(toDAPLineNumber(location.getLocation().getLineNumber()));
+            b.setColumn(toDAPColumnNumber(location.getLocation().getColumnNumber()));
+            b.setEndLine(toDAPLineNumber(location.getEnd().getLineNumber()));
+            b.setEndColumn(toDAPColumnNumber(location.getEnd().getColumnNumber()));
             result.add(b);
         }
         return result.toArray(BreakpointLocation[]::new);

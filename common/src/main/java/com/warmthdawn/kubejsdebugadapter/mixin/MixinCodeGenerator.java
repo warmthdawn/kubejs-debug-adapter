@@ -96,7 +96,9 @@ public abstract class MixinCodeGenerator {
             return;
         }
         ScriptSourceData sourceData = DebugRuntime.getInstance().getSourceManager().getSourceData(sourceName);
-        sourceData.finishCompile();
+        if (sourceData != null) {
+            sourceData.finishCompile();
+        }
     }
 
     @Inject(method = "generateICodeFromTree", at = @At("HEAD"))
@@ -108,10 +110,14 @@ public abstract class MixinCodeGenerator {
         }
         hasSourceFile = true;
 
+        ScriptSourceData sourceData = DebugRuntime.getInstance().getSourceManager().getSourceData(this.scriptOrFn.getSourceName());
+
+        if (sourceData == null) {
+            return;
+        }
         if (this.functionSourceData != null) {
             throw Kit.codeBug("Called generateICodeFromTree twice");
         }
-        ScriptSourceData sourceData = DebugRuntime.getInstance().getSourceManager().getSourceData(this.scriptOrFn.getSourceName());
 
         this.functionSourceData = sourceData.addFunction(scriptOrFn);
         getData().setFunctionScriptId(functionSourceData.getId());

@@ -5,6 +5,7 @@ import com.warmthdawn.kubejsdebugadapter.utils.BreakpointUtils;
 import com.warmthdawn.kubejsdebugadapter.utils.PathUtil;
 import dev.latvian.mods.rhino.ContextFactory;
 
+import javax.annotation.Nullable;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -18,6 +19,7 @@ public class SourceManager {
     private final Map<String, Boolean> loadedSources = new HashMap<>();
 
 
+    @Nullable
     public ScriptSourceData getSourceData(String sourceId) {
         return compiledSources.get(sourceId);
     }

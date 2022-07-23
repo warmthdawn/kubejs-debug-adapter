@@ -33,7 +33,7 @@ public class FunctionSourceData {
                 Block body = (Block) functionNode.getBody();
                 int bodyPos = body.getAbsolutePosition();
                 lcStart = bodyPos;
-                rcEnd = bodyPos + body.getLength();
+                rcEnd = bodyPos + body.getLength() - 1;
             }
         } else {
             name = scriptNode.getSourceName();

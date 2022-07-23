@@ -34,12 +34,4 @@ public class MixinScriptFile {
         sourceManager.addSource(this.info.location, script);
 
     }
-    @Inject(method = "load",
-        locals = LocalCapture.CAPTURE_FAILHARD,
-        at = @At(value = "INVOKE_ASSIGN", target = "Ldev/latvian/mods/rhino/Context;evaluateString(Ldev/latvian/mods/rhino/Scriptable;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Ljava/lang/Object;"))
-    private void inject_load(CallbackInfoReturnable<Boolean> cir) {
-        SourceManager sourceManager = DebugRuntime.getInstance().getSourceManager();
-        sourceManager.setSourceLoaded(this.info.location, true);
-
-    }
 }

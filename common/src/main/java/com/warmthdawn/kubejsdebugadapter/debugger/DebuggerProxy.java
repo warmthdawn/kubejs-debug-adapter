@@ -50,6 +50,9 @@ public class DebuggerProxy implements Debugger {
         }
 
         ScriptSourceData scriptSourceData = runtime.getSourceManager().getSourceData(sourceName);
+        if (scriptSourceData == null) {
+            return null;
+        }
         FunctionSourceData sourceData = scriptSourceData.getFunction(fnOrScript.getFunctionScriptId());
         LocationParser locationParser = scriptSourceData.getLocationParser();
         return new KubeStackFrame(

@@ -44,7 +44,7 @@ public class BreakpointManager {
             List<UserDefinedBreakpoint> toUpdate = new ArrayList<>();
             IntSet toRemove = new IntOpenHashSet();
             List<UserDefinedBreakpoint> validBreakpoints = BreakpointUtils.coerceBreakpoints(
-                data.getLocationList(),
+                data,
                 breakpoints,
                 toUpdate,
                 toRemove
@@ -127,7 +127,7 @@ public class BreakpointManager {
         List<UserDefinedBreakpoint> toUpdate = new ArrayList<>();
         IntSet toRemove = new IntOpenHashSet();
         List<UserDefinedBreakpoint> validBreakpoints = BreakpointUtils.coerceBreakpoints(
-            data.getLocationList(),
+            data,
             breakpoints,
             toUpdate,
             toRemove

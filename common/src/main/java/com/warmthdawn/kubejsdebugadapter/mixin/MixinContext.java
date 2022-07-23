@@ -4,6 +4,8 @@ import com.warmthdawn.kubejsdebugadapter.api.DebuggableScript;
 import com.warmthdawn.kubejsdebugadapter.api.Debugger;
 import com.warmthdawn.kubejsdebugadapter.api.IDebuggableContext;
 import com.warmthdawn.kubejsdebugadapter.api.IDebuggableScriptProvider;
+import com.warmthdawn.kubejsdebugadapter.debugger.DebugRuntime;
+import com.warmthdawn.kubejsdebugadapter.debugger.SourceManager;
 import dev.latvian.mods.rhino.*;
 import dev.latvian.mods.rhino.ast.AstRoot;
 import dev.latvian.mods.rhino.ast.ScriptNode;
@@ -46,9 +48,19 @@ public abstract class MixinContext implements IDebuggableContext {
     }
 
 
-    @Inject(method = "parse", at = @At("RETURN"))
-    private void inject_parse(String sourceString, String sourceName, int lineno, CompilerEnvirons compilerEnv, ErrorReporter compilationErrorReporter, boolean returnFunction, CallbackInfoReturnable<ScriptNode> cir) {
+    @Inject(method = "evaluateString",
+        at = @At(value = "INVOKE_ASSIGN",
+            target = "Ldev/latvian/mods/rhino/Context;compileString(Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Ldev/latvian/mods/rhino/Script;"))
+    private void inject_evaluateString(Scriptable scope, String source, String sourceName, int lineno, Object securityDomain, CallbackInfoReturnable<Object> cir) {
 
+        if (sourceName == null) {
+            return;
+        }
+        SourceManager sourceManager = DebugRuntime.getInstance().getSourceManager();
+        if (!sourceManager.hasCompiledSource(sourceName)) {
+            return;
+        }
+        sourceManager.setSourceLoaded(sourceName, true);
     }
 
 

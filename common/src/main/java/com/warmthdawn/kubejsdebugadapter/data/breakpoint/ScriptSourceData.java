@@ -1,7 +1,5 @@
 package com.warmthdawn.kubejsdebugadapter.data.breakpoint;
 
-import com.ibm.icu.impl.Pair;
-import com.warmthdawn.kubejsdebugadapter.data.ScriptLocation;
 import com.warmthdawn.kubejsdebugadapter.utils.BreakpointUtils;
 import com.warmthdawn.kubejsdebugadapter.utils.LocationParser;
 import dev.latvian.mods.rhino.Kit;
@@ -18,8 +16,9 @@ public class ScriptSourceData {
     private LocationParser parser;
 
     private boolean finished = false;
-    private List<Pair<ScriptLocation, ScriptLocation>> locationList = null;
+    private List<ScriptBreakpointInfo> locationList = null;
 
+    private List<ScriptBreakpointInfo> majorLocationList = null;
 
     private final List<FunctionSourceData> functions = new ArrayList<>();
 
@@ -54,6 +53,9 @@ public class ScriptSourceData {
     public void finishCompile() {
         this.finished = true;
         this.locationList = BreakpointUtils.collectBreakpoints(this);
+        this.majorLocationList = BreakpointUtils.collectMajorBreakpoints(locationList);
+
+
     }
 
     public String getId() {
@@ -64,14 +66,17 @@ public class ScriptSourceData {
         return finished;
     }
 
-    public List<Pair<ScriptLocation, ScriptLocation>> getLocationList() {
+    public List<ScriptBreakpointInfo> getLocationList() {
         return locationList;
+    }
+    public List<ScriptBreakpointInfo> getMajorLocationList() {
+        return majorLocationList;
     }
 
 
-    public List<Pair<ScriptLocation, ScriptLocation>> getLocationList(int lineStart, int lineEnd, int columnStart, int columnEnd) {
+    public List<ScriptBreakpointInfo> getLocationList(int lineStart, int lineEnd, int columnStart, int columnEnd) {
 
-        IntIntPair range = BreakpointUtils.binarySearchLocationsBetween(locationList.size(), it -> locationList.get(it).first, lineStart, lineEnd, columnStart, columnEnd);
+        IntIntPair range = BreakpointUtils.binarySearchLocationsBetween(locationList.size(), it -> locationList.get(it).getLocation(), lineStart, lineEnd, columnStart, columnEnd);
 
         if (!(range.firstInt() < range.secondInt())) {
             return Collections.emptyList();
