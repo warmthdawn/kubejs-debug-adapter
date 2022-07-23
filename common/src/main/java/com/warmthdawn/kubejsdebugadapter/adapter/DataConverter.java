@@ -72,6 +72,8 @@ public class DataConverter {
         result.setLine(toKubeLineNumber(breakpoint.getLine()));
         if (breakpoint.getColumn() != null) {
             result.setColumn(toKubeLineNumber(breakpoint.getColumn()));
+        } else {
+            result.setColumn(-1);
         }
         result.setId(id);
         return result;

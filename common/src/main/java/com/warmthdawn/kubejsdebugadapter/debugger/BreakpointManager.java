@@ -16,9 +16,7 @@ import org.eclipse.lsp4j.debug.SourceBreakpoint;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.function.BiConsumer;
 import java.util.function.Consumer;
-import java.util.function.IntConsumer;
 import java.util.stream.Collectors;
 
 public class BreakpointManager {
@@ -41,16 +39,18 @@ public class BreakpointManager {
     public IntSet setBreakpoint(String sourceId, List<UserDefinedBreakpoint> breakpoints) {
         if (sourceManager.isSourceLoaded(sourceId)) {
             ScriptSourceData data = sourceManager.getSourceData(sourceId);
-            List<UserDefinedBreakpoint> toUpdate = new ArrayList<>();
             IntSet toRemove = new IntOpenHashSet();
             List<UserDefinedBreakpoint> validBreakpoints = BreakpointUtils.coerceBreakpoints(
                 data,
                 breakpoints,
-                toUpdate,
-                toRemove
+                cb -> {
+                },
+                rb -> {
+                    breakpointIdMap.remove(rb.getId());
+                    toRemove.add(rb.getId());
+                }
             );
             this.breakpoints.put(sourceId, validBreakpoints);
-            toRemove.forEach(breakpointIdMap::remove);
             return toRemove;
 
         } else {
@@ -124,22 +124,16 @@ public class BreakpointManager {
             return;
         }
 
-        List<UserDefinedBreakpoint> toUpdate = new ArrayList<>();
-        IntSet toRemove = new IntOpenHashSet();
         List<UserDefinedBreakpoint> validBreakpoints = BreakpointUtils.coerceBreakpoints(
             data,
             breakpoints,
-            toUpdate,
-            toRemove
+            updateAction,
+            (rb) -> {
+                breakpointIdMap.remove(rb.getId());
+                removeAction.accept(rb);
+            }
         );
 
         this.breakpoints.put(sourceId, validBreakpoints);
-
-
-        toUpdate.forEach(updateAction);
-        toRemove.forEach(it -> {
-            UserDefinedBreakpoint remove = breakpointIdMap.remove(it);
-            removeAction.accept(remove);
-        });
     }
 }

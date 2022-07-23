@@ -13,6 +13,9 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
+import java.util.ArrayDeque;
+import java.util.LinkedList;
+
 import static com.warmthdawn.kubejsdebugadapter.utils.AstUtils.savePosition;
 
 @Mixin(value = IRFactory.class, remap = false)
@@ -55,17 +58,17 @@ public abstract class MixinIRFactory extends Parser {
 
     // 在转换表达式的时候，保存名字标签的位置
 
-    private final ThreadLocal<Name> _propertyNameNode = new ThreadLocal<>();
+    private final ThreadLocal<ArrayDeque<Name>> _propertyNameNode = ThreadLocal.withInitial(ArrayDeque::new);
 
     @Inject(method = "transformPropertyGet", at = @At("HEAD"))
     private void inject_transformPropertyGet_HEAD(PropertyGet node, CallbackInfoReturnable<Node> cir) {
-        _propertyNameNode.set(node.getProperty());
+        _propertyNameNode.get().push(node.getProperty());
     }
 
 
     @Inject(method = "transformPropertyGet", at = @At("RETURN"))
     private void inject_transformPropertyGet_RETURN(PropertyGet node, CallbackInfoReturnable<Node> cir) {
-        _propertyNameNode.set(null);
+        _propertyNameNode.get().pop();
     }
 
     @Redirect(method = "createPropertyGet",
@@ -73,7 +76,7 @@ public abstract class MixinIRFactory extends Parser {
     private Node inject_createPropertyGet_createName(IRFactory instance, String s) {
         // 保存名称
         Node node = createName(s);
-        savePosition(node, _propertyNameNode.get());
+        savePosition(node, _propertyNameNode.get().peek());
         return node;
     }
 
@@ -84,7 +87,7 @@ public abstract class MixinIRFactory extends Parser {
     private Node inject_createPropertyGet_newString(String str) {
         // 保存名称
         Node node = Node.newString(str);
-        savePosition(node, _propertyNameNode.get());
+        savePosition(node, _propertyNameNode.get().peek());
         return node;
     }
 

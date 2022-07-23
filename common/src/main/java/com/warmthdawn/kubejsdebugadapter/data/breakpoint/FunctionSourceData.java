@@ -78,6 +78,7 @@ public class FunctionSourceData {
         int id = expressionBreakpointMetas.size();
         BreakpointMeta meta = new BreakpointMeta(id, position, length);
         expressionBreakpointMetas.add(meta);
+        meta.setLowPriority(lowPriority);
         return meta;
     }
 

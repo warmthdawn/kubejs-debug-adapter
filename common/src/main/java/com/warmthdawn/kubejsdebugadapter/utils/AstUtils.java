@@ -105,7 +105,32 @@ public class AstUtils {
     public static NodeTypeTree typeTree(int type, NodeTypeTree ...children) {
         return new NodeTypeTree(type, children);
     }
+    public static NodeTypeTree[] typeTree(NodeTypeTree ...children) {
+        return children;
+    }
 
+    public static boolean isTreeOf(Node node, NodeTypeTree[] tree) {
+        Node it = node;
+        int i = 0;
+        while (it != null) {
+            if (i >= tree.length) {
+                return false;
+            }
+            NodeTypeTree n = tree[i];
+            if (n.currentType >= 0 && n.currentType != it.getType()) {
+                return false;
+            }
+            if(n.children.length > 0) {
+                boolean match = hasTreeOf(it, n.children);
+                if (!match) {
+                    return false;
+                }
+            }
+            it = it.getNext();
+            i++;
+        }
+        return i == tree.length;
+    }
 
     public static boolean hasTreeOf(Node node, NodeTypeTree[] tree) {
         Node last = node.getLastChild();

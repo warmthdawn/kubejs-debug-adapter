@@ -9,6 +9,7 @@ import it.unimi.dsi.fastutil.ints.IntIntPair;
 import it.unimi.dsi.fastutil.ints.IntSet;
 
 import java.util.*;
+import java.util.function.Consumer;
 import java.util.function.IntFunction;
 
 public class BreakpointUtils {
@@ -36,7 +37,7 @@ public class BreakpointUtils {
                     int position = meta.getPosition();
                     int length = meta.getLength();
                     locationList.add(
-                        ScriptBreakpointInfo.create("statement", locationParser, position, length)
+                        ScriptBreakpointInfo.create("statement", locationParser, position, length, meta.isLowPriority())
                     );
                 }
             }
@@ -45,7 +46,7 @@ public class BreakpointUtils {
                 int position = meta.getPosition();
                 int length = meta.getLength();
                 locationList.add(
-                    ScriptBreakpointInfo.create("expression", locationParser, position, length)
+                    ScriptBreakpointInfo.create("expression", locationParser, position, length, meta.isLowPriority())
                 );
             }
 
@@ -68,6 +69,21 @@ public class BreakpointUtils {
         ScriptBreakpointInfo firstMajor = null;
         ScriptBreakpointInfo firstMinor = null;
         for (ScriptBreakpointInfo info : sortedBreakpoints) {
+
+            int lineNumber = info.getLocation().getLineNumber();
+            if (lineNumber != prevLine) {
+                // 新行
+                if (firstMajor != null) {
+                    majorBreakpoints.add(firstMajor);
+                } else if(firstMinor != null) {
+                    majorBreakpoints.add(firstMinor);
+                }
+
+                firstMinor = null;
+                firstMajor = null;
+                prevLine = lineNumber;
+            }
+
             if (info.isLowPriority()) {
                 if (firstMinor == null) {
                     firstMinor = info;
@@ -77,20 +93,12 @@ public class BreakpointUtils {
                     firstMajor = info;
                 }
             }
-            int lineNumber = info.getLocation().getLineNumber();
-            if (lineNumber != prevLine) {
-                // 新行
-                if (firstMajor != null) {
-                    majorBreakpoints.add(firstMajor);
-                } else {
-                    majorBreakpoints.add(firstMinor);
-                }
 
-                firstMinor = null;
-                firstMajor = null;
-                prevLine = lineNumber;
-            }
-
+        }
+        if (firstMajor != null) {
+            majorBreakpoints.add(firstMajor);
+        } else if(firstMinor != null) {
+            majorBreakpoints.add(firstMinor);
         }
 
         return majorBreakpoints;
@@ -112,6 +120,10 @@ public class BreakpointUtils {
             } else {
                 right = mid;
             }
+        }
+
+        if (left >= length) {
+            return -1;
         }
 
         ScriptLocation result = locFunc.apply(left);
@@ -272,8 +284,8 @@ public class BreakpointUtils {
 
     public static List<UserDefinedBreakpoint> coerceBreakpoints(ScriptSourceData data,
                                                                 List<UserDefinedBreakpoint> raw,
-                                                                Collection<UserDefinedBreakpoint> changed,
-                                                                IntSet toRemove) {
+                                                                Consumer<UserDefinedBreakpoint> changedCallback,
+                                                                Consumer<UserDefinedBreakpoint> removeCallback) {
 
         Set<ScriptLocation> presentLocation = new HashSet<>();
         List<UserDefinedBreakpoint> result = new ArrayList<>();
@@ -282,13 +294,13 @@ public class BreakpointUtils {
             int column = breakpoint.getColumn();
             ScriptBreakpointInfo info = binarySearchLocation(data, line, column);
             if (info == null) {
-                toRemove.add(breakpoint.getId());
+                removeCallback.accept(breakpoint);
                 continue;
             }
             ScriptLocation location = info.getLocation();
 
             if (presentLocation.contains(location)) {
-                toRemove.add(breakpoint.getId());
+                removeCallback.accept(breakpoint);
                 continue;
             }
             presentLocation.add(location);
@@ -300,7 +312,7 @@ public class BreakpointUtils {
 
             breakpoint.setLine(location.getLineNumber());
             breakpoint.setColumn(location.getColumnNumber());
-            changed.add(breakpoint);
+            changedCallback.accept(breakpoint);
 
         }
         return result;

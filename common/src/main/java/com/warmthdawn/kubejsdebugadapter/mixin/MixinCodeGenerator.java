@@ -134,7 +134,17 @@ public abstract class MixinCodeGenerator {
         statementMetaStack.pop();
     }
 
-    private static final AstUtils.NodeTypeTree destructuringTree = AstUtils.typeTree(Token.EXPR_VOID,
+    private static final AstUtils.NodeTypeTree[] letExpressionTree = AstUtils.typeTree(
+        AstUtils.typeTree(
+            Token.ENTERWITH,
+            AstUtils.typeTree(Token.OBJECTLIT)
+        ),
+        AstUtils.typeTree(
+            Token.WITH
+        ),
+        AstUtils.typeTree(Token.LEAVEWITH)
+    );
+    private static final AstUtils.NodeTypeTree[] destructuringTree = AstUtils.typeTree(
         AstUtils.typeTree(Token.WITHEXPR,
 
             AstUtils.typeTree(
@@ -203,14 +213,17 @@ public abstract class MixinCodeGenerator {
                     }
                 }
             }
-
             // 解构赋值
-            if (AstUtils.hasTreeOf(node, destructuringTree.children)) {
+            if (AstUtils.hasTreeOf(node, destructuringTree)) {
                 Node target = node.getFirstChild().getFirstChild().getFirstChild().getFirstChild();
                 if (findSimpleStatement(target)) return;
             }
+        }
 
-
+        // Let 表达式，因为For循环会生成这玩意，淦
+        if(AstUtils.isTreeOf(node, letExpressionTree)) {
+            Node target = node.getFirstChild().getFirstChild();
+            if (findSimpleStatement(target)) return;
         }
 
 
