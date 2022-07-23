@@ -1,12 +1,9 @@
 package com.warmthdawn.kubejsdebugadapter.utils;
 
-import com.ibm.icu.impl.Pair;
-import com.warmthdawn.kubejsdebugadapter.data.ScriptLocation;
-import com.warmthdawn.kubejsdebugadapter.data.UserDefinedBreakpoint;
+import com.warmthdawn.kubejsdebugadapter.data.breakpoint.ScriptLocation;
+import com.warmthdawn.kubejsdebugadapter.data.breakpoint.UserDefinedBreakpoint;
 import com.warmthdawn.kubejsdebugadapter.data.breakpoint.*;
-import dev.latvian.mods.rhino.Kit;
 import it.unimi.dsi.fastutil.ints.IntIntPair;
-import it.unimi.dsi.fastutil.ints.IntSet;
 
 import java.util.*;
 import java.util.function.Consumer;

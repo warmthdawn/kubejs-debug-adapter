@@ -1,6 +1,5 @@
 package com.warmthdawn.kubejsdebugadapter.data.breakpoint;
 
-import com.warmthdawn.kubejsdebugadapter.data.ScriptLocation;
 import com.warmthdawn.kubejsdebugadapter.utils.LocationParser;
 
 public class ScriptBreakpointInfo {

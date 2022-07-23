@@ -1,8 +1,7 @@
 package com.warmthdawn.kubejsdebugadapter.adapter;
 
-import com.ibm.icu.impl.Pair;
-import com.warmthdawn.kubejsdebugadapter.data.*;
 import com.warmthdawn.kubejsdebugadapter.data.breakpoint.ScriptBreakpointInfo;
+import com.warmthdawn.kubejsdebugadapter.data.breakpoint.UserDefinedBreakpoint;
 import com.warmthdawn.kubejsdebugadapter.data.variable.ErrorVariable;
 import com.warmthdawn.kubejsdebugadapter.data.variable.IVariableTreeNode;
 import com.warmthdawn.kubejsdebugadapter.data.variable.KubeVariable;

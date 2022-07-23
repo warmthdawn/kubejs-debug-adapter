@@ -1,7 +1,5 @@
 package com.warmthdawn.kubejsdebugadapter.adapter;
 
-import com.ibm.icu.impl.Pair;
-import com.warmthdawn.kubejsdebugadapter.data.ScriptLocation;
 import com.warmthdawn.kubejsdebugadapter.data.breakpoint.ScriptBreakpointInfo;
 import com.warmthdawn.kubejsdebugadapter.data.breakpoint.ScriptSourceData;
 import com.warmthdawn.kubejsdebugadapter.debugger.DebugRuntime;

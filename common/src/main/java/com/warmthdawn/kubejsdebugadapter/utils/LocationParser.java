@@ -1,11 +1,9 @@
 package com.warmthdawn.kubejsdebugadapter.utils;
 
-import com.warmthdawn.kubejsdebugadapter.data.ScriptLocation;
-import dev.latvian.mods.rhino.ScriptRuntime;
+import com.warmthdawn.kubejsdebugadapter.data.breakpoint.ScriptLocation;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.ints.IntList;
 
-import java.util.Arrays;
 import java.util.Objects;
 
 public class LocationParser {

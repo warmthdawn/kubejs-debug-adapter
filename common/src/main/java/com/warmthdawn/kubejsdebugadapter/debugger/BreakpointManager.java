@@ -1,11 +1,10 @@
 package com.warmthdawn.kubejsdebugadapter.debugger;
 
 import com.warmthdawn.kubejsdebugadapter.adapter.DataConverter;
-import com.warmthdawn.kubejsdebugadapter.data.UserDefinedBreakpoint;
+import com.warmthdawn.kubejsdebugadapter.data.breakpoint.UserDefinedBreakpoint;
 import com.warmthdawn.kubejsdebugadapter.data.breakpoint.ScriptSourceData;
 import com.warmthdawn.kubejsdebugadapter.utils.BreakpointUtils;
 import com.warmthdawn.kubejsdebugadapter.utils.PathUtil;
-import dev.latvian.mods.rhino.Context;
 import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
 import it.unimi.dsi.fastutil.ints.IntSet;
 import it.unimi.dsi.fastutil.ints.IntSets;

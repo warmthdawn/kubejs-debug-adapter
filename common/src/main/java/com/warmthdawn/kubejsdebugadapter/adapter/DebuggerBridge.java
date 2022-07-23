@@ -1,7 +1,7 @@
 package com.warmthdawn.kubejsdebugadapter.adapter;
 
-import com.warmthdawn.kubejsdebugadapter.data.ScriptLocation;
-import com.warmthdawn.kubejsdebugadapter.data.UserDefinedBreakpoint;
+import com.warmthdawn.kubejsdebugadapter.data.breakpoint.ScriptLocation;
+import com.warmthdawn.kubejsdebugadapter.data.breakpoint.UserDefinedBreakpoint;
 import com.warmthdawn.kubejsdebugadapter.data.breakpoint.BreakpointMeta;
 import com.warmthdawn.kubejsdebugadapter.debugger.BreakpointManager;
 import com.warmthdawn.kubejsdebugadapter.utils.LocationParser;
