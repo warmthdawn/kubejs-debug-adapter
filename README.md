@@ -6,7 +6,7 @@ A [Debug Adapter Protocol](https://microsoft.github.io/debug-adapter-protocol/) 
 
 ## How to use it?
 
-1. Install the vscode extension [Debugger for KubeJS]()
+1. Install the vscode extension [Debugger for KubeJS](https://github.com/warmthdawn/debugger-for-kubejs)
 2. Install this mod
 3. Start game until it show a dialog waiting for debuggers
 4. Open a script that the game will load with vscode.

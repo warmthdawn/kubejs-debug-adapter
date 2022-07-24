@@ -12,6 +12,8 @@ import com.warmthdawn.kubejsdebugadapter.data.breakpoint.StatementBreakpointMeta
 import com.warmthdawn.kubejsdebugadapter.utils.EvalUtils;
 import com.warmthdawn.kubejsdebugadapter.utils.LocationParser;
 import dev.latvian.mods.rhino.*;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.eclipse.lsp4j.debug.StoppedEventArgumentsReason;
 
 import java.util.Collections;
@@ -21,6 +23,7 @@ import java.util.Set;
 public class KubeStackFrame implements DebugFrame {
 
 
+    private static final Logger log = LogManager.getLogger();
     private final String[] paramNames;
     private final Set<String> localNames;
 
@@ -126,8 +129,10 @@ public class KubeStackFrame implements DebugFrame {
             DebugThread thread = runtime.getThread(cx);
             bridge.notifyStop(thread.id(), reason);
             this.interrupted = true;
+            log.info("The script is interrupted by a breakpoint.");
             //暂停脚本执行
             thread.interrupt();
+            log.info("The script execution is resumed.");
             this.interrupted = false;
         }
     }
