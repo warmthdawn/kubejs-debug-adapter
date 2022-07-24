@@ -149,12 +149,21 @@ public class KubeStackFrame implements DebugFrame {
             data.clearStepInfo();
             return;
         }
+
+
+        if (this.sourceData.isHasBlock()) {
+            UserDefinedBreakpoint userDefinedBreakpoint = bridge.getBreakpointAt(this.source, locationParser, this.sourceData.getLcStart());
+            if (handleBreakpoint(bridge, cx, userDefinedBreakpoint)) {
+                return;
+            }
+        }
         // 是否有函数断点
         if (bridge.hasFunctionBreakpointFor(functionName)) {
             DebugThread thread = runtime.getThread(cx);
             bridge.notifyStop(thread.id(), StoppedEventArgumentsReason.FUNCTION_BREAKPOINT);
             data.clearStepInfo();
         }
+
     }
 
     private void updatePosition(int position, int length) {
@@ -162,21 +171,7 @@ public class KubeStackFrame implements DebugFrame {
         endLocation = locationParser.toLocation(position + length);
     }
 
-    private boolean handleCommonBreakable(DebugContextData data, DebuggerBridge bridge, Context cx, BreakpointMeta meta) {
-        if (data.isEvaluating()) {
-            return true;
-        }
-        // 暂停
-        if (bridge.shouldPause() || data.shouldPause()) {
-            handlePause(cx, StoppedEventArgumentsReason.PAUSE);
-            return true;
-        }
-        if (meta == null) {
-            return false;
-        }
-
-        UserDefinedBreakpoint userDefinedBreakpoint = bridge.getBreakpointAt(this.source, locationParser, meta);
-        // 是否有断点
+    private boolean handleBreakpoint(DebuggerBridge bridge, Context cx, UserDefinedBreakpoint userDefinedBreakpoint) {
         if (userDefinedBreakpoint != null) {
             if (userDefinedBreakpoint.getCondition() != null) {
                 try {
@@ -198,6 +193,25 @@ public class KubeStackFrame implements DebugFrame {
             return true;
         }
         return false;
+    }
+
+    private boolean handleCommonBreakable(DebugContextData data, DebuggerBridge bridge, Context cx, BreakpointMeta meta) {
+        if (data.isEvaluating()) {
+            return true;
+        }
+        // 暂停
+        if (bridge.shouldPause() || data.shouldPause()) {
+            handlePause(cx, StoppedEventArgumentsReason.PAUSE);
+            return true;
+        }
+        if (meta == null) {
+            return false;
+        }
+
+        UserDefinedBreakpoint userDefinedBreakpoint = bridge.getBreakpointAt(this.source, locationParser, meta.getPosition());
+        // 是否有断点
+        return handleBreakpoint(bridge, cx, userDefinedBreakpoint);
+
     }
 
     @Override
@@ -251,6 +265,12 @@ public class KubeStackFrame implements DebugFrame {
 
     @Override
     public void onExit(Context cx, boolean byThrow, Object resultOrException) {
+        if (this.sourceData.isHasBlock()) {
+            DebuggerBridge bridge = runtime.getBridge();
+            UserDefinedBreakpoint userDefinedBreakpoint = bridge.getBreakpointAt(this.source, locationParser, this.sourceData.getRcEnd());
+            handleBreakpoint(bridge, cx, userDefinedBreakpoint);
+        }
+
         // TODO: 如果断点打在方法最后一行？
         DebugContextData.get(cx).popFrame();
     }

@@ -38,8 +38,8 @@ public class DebuggerBridge {
         return breakpointManager;
     }
 
-    public UserDefinedBreakpoint getBreakpointAt(String source, LocationParser parser, BreakpointMeta meta) {
-        ScriptLocation location = parser.toLocation(meta.getPosition());
+    public UserDefinedBreakpoint getBreakpointAt(String source, LocationParser parser, int pos) {
+        ScriptLocation location = parser.toLocation(pos);
         for (UserDefinedBreakpoint breakpoint : breakpointManager.getBreakpoints(source)) {
             if (breakpoint.getLine() == location.getLineNumber() && breakpoint.getColumn() == location.getColumnNumber()) {
                 return breakpoint;
