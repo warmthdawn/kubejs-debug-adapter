@@ -152,6 +152,7 @@ public class KubeStackFrame implements DebugFrame {
 
 
         if (this.sourceData.isHasBlock()) {
+            updatePosition(this.sourceData.getRcEnd(), 1);
             UserDefinedBreakpoint userDefinedBreakpoint = bridge.getBreakpointAt(this.source, locationParser, this.sourceData.getLcStart());
             if (handleBreakpoint(bridge, cx, userDefinedBreakpoint)) {
                 return;
@@ -267,6 +268,7 @@ public class KubeStackFrame implements DebugFrame {
     public void onExit(Context cx, boolean byThrow, Object resultOrException) {
         if (this.sourceData.isHasBlock()) {
             DebuggerBridge bridge = runtime.getBridge();
+            updatePosition(this.sourceData.getRcEnd(), 1);
             UserDefinedBreakpoint userDefinedBreakpoint = bridge.getBreakpointAt(this.source, locationParser, this.sourceData.getRcEnd());
             handleBreakpoint(bridge, cx, userDefinedBreakpoint);
         }
