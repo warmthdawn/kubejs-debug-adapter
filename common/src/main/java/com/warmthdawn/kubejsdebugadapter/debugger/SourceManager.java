@@ -50,6 +50,7 @@ public class SourceManager {
 
     public void addSource(String sourceId, String sourceString) {
         compiledSources.put(sourceId, new ScriptSourceData(sourceId, sourceString));
+        loadedSources.remove(sourceId);
     }
 
     public ScriptSourceData compileSource(String sourceId) {

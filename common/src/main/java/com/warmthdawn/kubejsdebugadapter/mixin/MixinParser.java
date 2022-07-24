@@ -24,7 +24,7 @@ public abstract class MixinParser {
     protected abstract Node createName(int type, String name, Node child);
 
     @Shadow
-    private CompilerEnvirons compilerEnv;
+    CompilerEnvirons compilerEnv;
     @Shadow
     private int syntaxErrorCount;
     private final ThreadLocal<Name> _nameNode = new ThreadLocal<>();

@@ -91,19 +91,22 @@ public abstract class MixinCodeGenerator {
     @Inject(method = "compile", at = @At("RETURN"))
     private void inject_compile(CompilerEnvirons compilerEnv, ScriptNode tree, boolean returnFunction, CallbackInfoReturnable<Object> cir) {
 
-        String sourceName = this.scriptOrFn.getSourceName();
-        if (sourceName == null) {
-            return;
-        }
-        ScriptSourceData sourceData = DebugRuntime.getInstance().getSourceManager().getSourceData(sourceName);
-        if (sourceData != null) {
-            sourceData.finishCompile();
+        try {
+            String sourceName = this.scriptOrFn.getSourceName();
+            if (sourceName == null) {
+                return;
+            }
+            ScriptSourceData sourceData = DebugRuntime.getInstance().getSourceManager().getSourceData(sourceName);
+            if (sourceData != null) {
+                sourceData.finishCompile();
+            }
+        } catch (Throwable t) {
+            DebugRuntime.getInstance().sendError("Error while compiling breakpoint info in " + this.scriptOrFn.getSourceName(), t);
         }
     }
 
     @Inject(method = "generateICodeFromTree", at = @At("HEAD"))
     private void inject_generateICodeFromTree(CallbackInfo ci) {
-
         String sourceName = this.scriptOrFn.getSourceName();
         if (sourceName == null) {
             return;
@@ -112,18 +115,23 @@ public abstract class MixinCodeGenerator {
             return;
         }
 
-        enabled = true;
-        ScriptSourceData sourceData = DebugRuntime.getInstance().getSourceManager().getSourceData(this.scriptOrFn.getSourceName());
 
-        if (sourceData == null) {
-            return;
-        }
-        if (this.functionSourceData != null) {
-            throw Kit.codeBug("Called generateICodeFromTree twice");
-        }
+        try {
+            enabled = true;
+            ScriptSourceData sourceData = DebugRuntime.getInstance().getSourceManager().getSourceData(this.scriptOrFn.getSourceName());
 
-        this.functionSourceData = sourceData.addFunction(scriptOrFn);
-        getData().setFunctionScriptId(functionSourceData.getId());
+            if (sourceData == null) {
+                return;
+            }
+            if (this.functionSourceData != null) {
+                throw Kit.codeBug("Called generateICodeFromTree twice");
+            }
+
+            this.functionSourceData = sourceData.addFunction(scriptOrFn);
+            getData().setFunctionScriptId(functionSourceData.getId());
+        } catch (Throwable t) {
+            DebugRuntime.getInstance().sendError("Error while compiling breakpoint info in " + this.scriptOrFn.getSourceName(), t);
+        }
 
     }
 
@@ -132,6 +140,10 @@ public abstract class MixinCodeGenerator {
     @Inject(method = "visitStatement", at = @At("RETURN"))
     private void inject_visitStatement_RETURN(Node node, int initialStackDepth, CallbackInfo ci) {
         if (!enabled) {
+            return;
+        }
+        if (statementMetaStack.isEmpty()) {
+            DebugRuntime.getInstance().sendError("Error while compiling breakpoint info in " + this.scriptOrFn.getSourceName() + ": statementMetaStack is empty");
             return;
         }
         statementMetaStack.pop();
@@ -172,81 +184,91 @@ public abstract class MixinCodeGenerator {
         if (!enabled) {
             return;
         }
-        statementMetaStack.push(-1);
 
-        int type = node.getType();
+        try {
 
-        // 这几条语句需要特殊处理
-        switch (type) {
-            case Token.LABEL:
-            case Token.LOOP:
-            case Token.BLOCK:
-            case Token.EMPTY:
-            case Token.WITH:
-            case Token.SCRIPT:
-            case Token.LOCAL_BLOCK:
-            case Token.FINALLY:
-            case Token.TRY:
-                return;
-        }
 
-        {
-            int position = node.getIntProp(ExtendedConst.TOKEN_POSITION_PROP, -1);
+            statementMetaStack.push(-1);
 
-            if (position > 0) {
-                int length = node.getIntProp(ExtendedConst.TOKEN_LENGTH_PROP, 1);
-                this.addStatementBreakpointMeta(position, length, false);
-                return;
+            int type = node.getType();
+
+            // 这几条语句需要特殊处理
+            switch (type) {
+                case Token.LABEL:
+                case Token.LOOP:
+                case Token.BLOCK:
+                case Token.EMPTY:
+                case Token.WITH:
+                case Token.SCRIPT:
+                case Token.LOCAL_BLOCK:
+                case Token.FINALLY:
+                case Token.TRY:
+                    return;
             }
-        }
 
-        // 肯定是生成的表达式，不去管他
-        if (node.getFirstChild() == null && node.getLineno() < 0) {
-            return;
-        }
+            {
+                int position = node.getIntProp(ExtendedConst.TOKEN_POSITION_PROP, -1);
 
-        if (type == Token.EXPR_VOID) {
-            Node firstChild = node.getFirstChild();
-            if (firstChild != null) {
-                // let const 和 var
-                int firstChildType = firstChild.getType();
-                if (firstChildType == Token.SETNAME || firstChildType == Token.SETCONST) {
-                    if (firstChild.getFirstChild() != null) {
-                        if (findSimpleStatement(firstChild.getFirstChild().getNext())) return;
-                    }
+                if (position > 0) {
+                    int length = node.getIntProp(ExtendedConst.TOKEN_LENGTH_PROP, 1);
+                    this.addStatementBreakpointMeta(position, length, false);
+                    return;
                 }
             }
-            // 解构赋值
-            if (AstUtils.hasTreeOf(node, destructuringTree)) {
-                Node target = node.getFirstChild().getFirstChild().getFirstChild().getFirstChild();
-                if (findSimpleStatement(target)) return;
-            }
-        }
 
-        // Let 表达式，因为For循环会生成这玩意，淦
-        if (AstUtils.isTreeOf(node, letExpressionTree)) {
-            Node target = node.getFirstChild().getFirstChild();
-            if (findSimpleStatement(target)) return;
-        }
-
-
-        if (type == Token.RETURN || type == Token.YIELD || type == Token.YIELD_STAR) {
-            int position = node.getIntProp(ExtendedConst.TOKEN_SPECIAL_POSITION_PROP, -1);
-            int length = type == Token.RETURN ? "return".length() : "yield".length();
-            if (position > 0) {
-                this.addStatementBreakpointMeta(position, length, true);
+            // 肯定是生成的表达式，不去管他
+            if (node.getFirstChild() == null && node.getLineno() < 0) {
                 return;
             }
+
+            if (type == Token.EXPR_VOID) {
+                Node firstChild = node.getFirstChild();
+                if (firstChild != null) {
+                    // let const 和 var
+                    int firstChildType = firstChild.getType();
+                    if (firstChildType == Token.SETNAME || firstChildType == Token.SETCONST) {
+                        if (firstChild.getFirstChild() != null) {
+                            if (findSimpleStatement(firstChild.getFirstChild().getNext())) return;
+                        }
+                    }
+                }
+                // 解构赋值
+                if (AstUtils.hasTreeOf(node, destructuringTree)) {
+                    Node target = node.getFirstChild().getFirstChild().getFirstChild().getFirstChild();
+                    if (findSimpleStatement(target)) return;
+                }
+            }
+
+            // Let 表达式，因为For循环会生成这玩意，淦
+            if (AstUtils.isTreeOf(node, letExpressionTree)) {
+                Node target = node.getFirstChild().getFirstChild();
+                if (findSimpleStatement(target)) return;
+            }
+
+
+            if (type == Token.RETURN || type == Token.YIELD || type == Token.YIELD_STAR) {
+                int position = node.getIntProp(ExtendedConst.TOKEN_SPECIAL_POSITION_PROP, -1);
+                int length = type == Token.RETURN ? "return".length() : "yield".length();
+                if (position > 0) {
+                    this.addStatementBreakpointMeta(position, length, true);
+                    return;
+                }
+            }
+
+
+            if (findSimpleStatement(node)) return;
+
+            String typeStr = Token.typeToName(type);
+            String nodeStr = AstUtils.printNode(node);
+
+            KubeJSDebugAdapter.log.warn("Could not find breakpoint location for {} \n {}", typeStr, nodeStr);
+            DebugRuntime.getInstance().sendError("Could not find breakpoint location for " + typeStr + "\n" + nodeStr);
+
+
+        } catch (Throwable t) {
+            DebugRuntime.getInstance().sendError("Error while compiling breakpoint info in " + this.scriptOrFn.getSourceName() + ": could not resolve expression", t);
         }
 
-
-        if (findSimpleStatement(node)) return;
-
-        String typeStr = Token.typeToName(type);
-        String nodeStr = AstUtils.printNode(node);
-
-
-        KubeJSDebugAdapter.log.warn("Could not find breakpoint location for {} \n {}", typeStr, nodeStr);
     }
 
     private boolean findSimpleStatement(Node node) {
@@ -285,20 +307,25 @@ public abstract class MixinCodeGenerator {
         if (!enabled) {
             return;
         }
-        int type = node.getType();
-        if (type == Token.SETCONST || type == Token.SETNAME) {
-            Node nameNode = node.getFirstChild();
-            if (nameNode == null) {
-                return;
-            }
-            int destructuring = nameNode.getIntProp(ExtendedConst.DESTRUCTURING_SET_FLAG_PROP, -1);
-            if (destructuring > 0) {
-                int position = nameNode.getIntProp(ExtendedConst.TOKEN_POSITION_PROP, -1);
-                if (position > 0) {
-                    int length = nameNode.getIntProp(ExtendedConst.TOKEN_LENGTH_PROP, 1);
-                    this.addExpressionBreakpointMeta(position, length, true);
+        try {
+            int type = node.getType();
+            if (type == Token.SETCONST || type == Token.SETNAME) {
+                Node nameNode = node.getFirstChild();
+                if (nameNode == null) {
+                    return;
+                }
+                int destructuring = nameNode.getIntProp(ExtendedConst.DESTRUCTURING_SET_FLAG_PROP, -1);
+                if (destructuring > 0) {
+                    int position = nameNode.getIntProp(ExtendedConst.TOKEN_POSITION_PROP, -1);
+                    if (position > 0) {
+                        int length = nameNode.getIntProp(ExtendedConst.TOKEN_LENGTH_PROP, 1);
+                        this.addExpressionBreakpointMeta(position, length, true);
+                    }
                 }
             }
+
+        } catch (Throwable t) {
+            DebugRuntime.getInstance().sendError("Error while compiling breakpoint info in " + this.scriptOrFn.getSourceName() + ": could not resolve destructuring expression ", t);
         }
     }
 
@@ -308,27 +335,31 @@ public abstract class MixinCodeGenerator {
         if (!enabled) {
             return;
         }
-        int type = node.getType();
-        if (type != Token.CALL && type != Token.REF_CALL && type != Token.NEW) {
-            throw Kit.codeBug();
-        }
-        Node child = node.getFirstChild();
-        // Get Child's Name
-
-        Name nameNode = AstUtils.findMethodName(child);
-
-        if (nameNode != null) {
-            int position = nameNode.getIntProp(ExtendedConst.TOKEN_POSITION_PROP, -1);
-            int length = nameNode.getIntProp(ExtendedConst.TOKEN_LENGTH_PROP, 1);
-            if (position > 0) {
-                this.addExpressionBreakpointMeta(position, length, false);
+        try {
+            int type = node.getType();
+            if (type != Token.CALL && type != Token.REF_CALL && type != Token.NEW) {
+                throw Kit.codeBug();
             }
+            Node child = node.getFirstChild();
+            // Get Child's Name
 
-        } else {
-            int rc = node.getIntProp(ExtendedConst.TOKEN_SPECIAL_POSITION_PROP, -1);
-            if (rc > 0) {
-                this.addExpressionBreakpointMeta(rc, 1, false);
+            Name nameNode = AstUtils.findMethodName(child);
+
+            if (nameNode != null) {
+                int position = nameNode.getIntProp(ExtendedConst.TOKEN_POSITION_PROP, -1);
+                int length = nameNode.getIntProp(ExtendedConst.TOKEN_LENGTH_PROP, 1);
+                if (position > 0) {
+                    this.addExpressionBreakpointMeta(position, length, false);
+                }
+
+            } else {
+                int rc = node.getIntProp(ExtendedConst.TOKEN_SPECIAL_POSITION_PROP, -1);
+                if (rc > 0) {
+                    this.addExpressionBreakpointMeta(rc, 1, false);
+                }
             }
+        } catch (Throwable t) {
+            DebugRuntime.getInstance().sendError("Error while compiling breakpoint info in " + this.scriptOrFn.getSourceName() + ": could not resolve call expression ", t);
         }
     }
 }

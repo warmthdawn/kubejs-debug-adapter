@@ -1,5 +1,6 @@
 package com.warmthdawn.kubejsdebugadapter.adapter;
 
+import com.warmthdawn.kubejsdebugadapter.debugger.DebugRuntime;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.eclipse.lsp4j.debug.services.IDebugProtocolClient;
@@ -103,6 +104,7 @@ public class DebuggerLauncher {
 
 
         log.error("Internal Error", throwable);
+        DebugRuntime.getInstance().sendError("Error occurred: " + throwable.getMessage());
 
         return new ResponseError(500, "Internal Error", throwable.getMessage());
     }

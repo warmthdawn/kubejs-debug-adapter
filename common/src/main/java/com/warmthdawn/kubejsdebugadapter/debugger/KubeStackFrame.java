@@ -268,6 +268,9 @@ public class KubeStackFrame implements DebugFrame {
     public void onExit(Context cx, boolean byThrow, Object resultOrException) {
         if (this.sourceData.isHasBlock()) {
             DebuggerBridge bridge = runtime.getBridge();
+            if (bridge == null) {
+                return;
+            }
             updatePosition(this.sourceData.getRcEnd(), 1);
             UserDefinedBreakpoint userDefinedBreakpoint = bridge.getBreakpointAt(this.source, locationParser, this.sourceData.getRcEnd());
             handleBreakpoint(bridge, cx, userDefinedBreakpoint);

@@ -51,11 +51,9 @@ public class ScriptSourceData {
     }
 
     public void finishCompile() {
-        this.finished = true;
         this.locationList = BreakpointUtils.collectBreakpoints(this);
         this.majorLocationList = BreakpointUtils.collectMajorBreakpoints(locationList);
-
-
+        this.finished = true;
     }
 
     public String getId() {

@@ -45,6 +45,9 @@ public class DebuggerPlugin extends KubeJSPlugin {
 
 
         NotifyDialog.close();
+
+        KubeJSDebugAdapter.log.info("Debugger plugin loaded");
+
     }
 
 

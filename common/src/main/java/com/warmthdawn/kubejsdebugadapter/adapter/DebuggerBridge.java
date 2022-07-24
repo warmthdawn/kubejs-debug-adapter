@@ -91,6 +91,21 @@ public class DebuggerBridge {
         client.output(args);
     }
 
+    public void sendError(String output) {
+        OutputEventArguments args = new OutputEventArguments();
+        Calendar calendar = Calendar.getInstance();
+        StringBuilder sb = new StringBuilder();
+        sb.append("[error] ");
+
+        addTime(calendar, sb);
+        sb.append(output);
+        sb.append(System.lineSeparator());
+        args.setOutput(sb.toString());
+        args.setCategory(OutputEventArgumentsCategory.STDERR);
+
+        client.output(args);
+    }
+
     private void addTime(Calendar calendar, StringBuilder sb) {
         sb.append('[');
 

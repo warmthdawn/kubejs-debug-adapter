@@ -38,25 +38,25 @@ public class BreakpointManager {
     public IntSet setBreakpoint(String sourceId, List<UserDefinedBreakpoint> breakpoints) {
         if (sourceManager.isSourceLoaded(sourceId)) {
             ScriptSourceData data = sourceManager.getSourceData(sourceId);
-            IntSet toRemove = new IntOpenHashSet();
-            List<UserDefinedBreakpoint> validBreakpoints = BreakpointUtils.coerceBreakpoints(
-                data,
-                breakpoints,
-                cb -> {
-                },
-                rb -> {
-                    breakpointIdMap.remove(rb.getId());
-                    toRemove.add(rb.getId());
-                }
-            );
-            this.breakpoints.put(sourceId, validBreakpoints);
-            return toRemove;
-
-        } else {
-            this.breakpoints.put(sourceId, breakpoints);
-            return IntSets.emptySet();
+            if (data != null && data.isFinished()) {
+                IntSet toRemove = new IntOpenHashSet();
+                List<UserDefinedBreakpoint> validBreakpoints = BreakpointUtils.coerceBreakpoints(
+                    data,
+                    breakpoints,
+                    cb -> {
+                    },
+                    rb -> {
+                        breakpointIdMap.remove(rb.getId());
+                        toRemove.add(rb.getId());
+                    }
+                );
+                this.breakpoints.put(sourceId, validBreakpoints);
+                return toRemove;
+            }
         }
 
+        this.breakpoints.put(sourceId, breakpoints);
+        return IntSets.emptySet();
     }
 
     public List<UserDefinedBreakpoint> getBreakpoints(String sourceId) {
@@ -116,7 +116,8 @@ public class BreakpointManager {
     }
 
 
-    public void fixBreakpoints(String sourceId, Consumer<UserDefinedBreakpoint> updateAction, Consumer<UserDefinedBreakpoint> removeAction) {
+    public void fixBreakpoints(String
+                                   sourceId, Consumer<UserDefinedBreakpoint> updateAction, Consumer<UserDefinedBreakpoint> removeAction) {
         ScriptSourceData data = sourceManager.getSourceData(sourceId);
         List<UserDefinedBreakpoint> breakpoints = this.breakpoints.get(sourceId);
         if (breakpoints == null) {

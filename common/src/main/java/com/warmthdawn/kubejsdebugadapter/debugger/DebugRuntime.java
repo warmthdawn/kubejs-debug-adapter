@@ -2,7 +2,12 @@ package com.warmthdawn.kubejsdebugadapter.debugger;
 
 import com.warmthdawn.kubejsdebugadapter.adapter.DebuggerBridge;
 import dev.latvian.mods.rhino.Context;
+import org.apache.commons.io.output.StringBuilderWriter;
 
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.util.ArrayDeque;
 import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -24,6 +29,10 @@ public class DebugRuntime {
     private final Map<Context, Integer> contextThreadMap = new ConcurrentHashMap<>();
 
     private final SourceManager sourceManager = new SourceManager();
+
+    private final ReentrantLock messageLock = new ReentrantLock();
+
+    private final ArrayDeque<String> pendingMessages = new ArrayDeque<>();
 
 
     private int threadId = 0;
@@ -96,12 +105,56 @@ public class DebugRuntime {
     }
 
     public void setBridge(DebuggerBridge bridge) {
-        this.bridge = bridge;
-        bridge.getBreakpointManager().setSourceManager(sourceManager);
+        messageLock.lock();
+        try {
+            this.bridge = bridge;
+            bridge.getBreakpointManager().setSourceManager(sourceManager);
+        } finally {
+            messageLock.lock();
+        }
     }
 
     public void removeBridge() {
         this.bridge = null;
+    }
+
+
+    public void sendOutput(String output) {
+        messageLock.lock();
+        try {
+            if (this.bridge != null) {
+                this.bridge.sendOutput(output);
+            } else {
+                pendingMessages.add(output);
+            }
+        } finally {
+            messageLock.unlock();
+        }
+    }
+
+    public void sendError(String error, Throwable e) {
+        try {
+            StringBuilderWriter writer = new StringBuilderWriter();
+            writer.append(error).append(":").append(e.getMessage()).append(System.lineSeparator());
+            e.printStackTrace(new PrintWriter(writer, true));
+            sendError(writer.toString());
+            writer.close();
+        } catch (IOException ignored) {
+
+        }
+    }
+
+    public void sendError(String error) {
+        messageLock.lock();
+        try {
+            if (this.bridge != null) {
+                this.bridge.sendError(error);
+            } else {
+                pendingMessages.add(error);
+            }
+        } finally {
+            messageLock.unlock();
+        }
     }
 
 
